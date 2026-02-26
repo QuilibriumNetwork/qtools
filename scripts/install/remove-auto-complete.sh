@@ -2,10 +2,13 @@
 # HELP: Removes tab autocomplete for the qtools command from bashrc.
 log "Removing autocomplete for qtools command..."
 
-# Remove the function-based completion block (multi-line removal)
-# Matches from the _qtools_complete function definition to the complete -F registration line
 if grep -q '_qtools_complete' $BASHRC_FILE 2>/dev/null; then
-  sudo sed -i '\|_qtools_complete() {|,\|complete -F _qtools_complete qtools|d' $BASHRC_FILE
+  # Use awk to skip the entire block from _qtools_complete() { to complete -F _qtools_complete qtools
+  sudo awk '
+    /_qtools_complete\(\)/ { skip=1 }
+    skip && /complete -F _qtools_complete qtools/ { skip=0; next }
+    !skip
+  ' $BASHRC_FILE > /tmp/bashrc_cleaned && sudo mv /tmp/bashrc_cleaned $BASHRC_FILE
   log "Removed _qtools_complete function block."
 else
   log "_qtools_complete not found in $BASHRC_FILE, skipping."

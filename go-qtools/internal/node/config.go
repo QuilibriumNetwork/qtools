@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
 	"gopkg.in/yaml.v3"
 )
 

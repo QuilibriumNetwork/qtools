@@ -68,18 +68,18 @@ enable_manual_mode() {
     # Get base ports from config or use defaults
     local base_p2p=$(yq eval '.engine.dataWorkerBaseP2PPort // "0"' $QUIL_CONFIG_FILE)
     if [ -z "$base_p2p" ] || [ "$base_p2p" = "0" ]; then
-        base_p2p=$(yq eval '.service.clustering.worker_base_p2p_port // "50000"' $QTOOLS_CONFIG_FILE)
+        base_p2p=$(yq eval '.service.clustering.worker_base_p2p_port // "25000"' $QTOOLS_CONFIG_FILE)
     fi
     if [ -z "$base_p2p" ] || [ "$base_p2p" = "0" ]; then
-        base_p2p=50000
+        base_p2p=25000
     fi
 
     local base_stream=$(yq eval '.engine.dataWorkerBaseStreamPort // "0"' $QUIL_CONFIG_FILE)
     if [ -z "$base_stream" ] || [ "$base_stream" = "0" ]; then
-        base_stream=$(yq eval '.service.clustering.worker_base_stream_port // "60000"' $QTOOLS_CONFIG_FILE)
+        base_stream=$(yq eval '.service.clustering.worker_base_stream_port // "32500"' $QTOOLS_CONFIG_FILE)
     fi
     if [ -z "$base_stream" ] || [ "$base_stream" = "0" ]; then
-        base_stream=60000
+        base_stream=32500
     fi
 
     echo "Enabling manual mode with $worker_count workers"
@@ -206,18 +206,18 @@ remove_firewall_rules() {
     # Get base ports from quil config
     local base_p2p=$(yq eval '.engine.dataWorkerBaseP2PPort // "0"' $QUIL_CONFIG_FILE)
     if [ -z "$base_p2p" ] || [ "$base_p2p" = "0" ]; then
-        base_p2p=$(yq eval '.service.clustering.worker_base_p2p_port // "50000"' $QTOOLS_CONFIG_FILE)
+        base_p2p=$(yq eval '.service.clustering.worker_base_p2p_port // "25000"' $QTOOLS_CONFIG_FILE)
     fi
     if [ -z "$base_p2p" ] || [ "$base_p2p" = "0" ]; then
-        base_p2p=50000
+        base_p2p=25000
     fi
 
     local base_stream=$(yq eval '.engine.dataWorkerBaseStreamPort // "0"' $QUIL_CONFIG_FILE)
     if [ -z "$base_stream" ] || [ "$base_stream" = "0" ]; then
-        base_stream=$(yq eval '.service.clustering.worker_base_stream_port // "60000"' $QTOOLS_CONFIG_FILE)
+        base_stream=$(yq eval '.service.clustering.worker_base_stream_port // "32500"' $QTOOLS_CONFIG_FILE)
     fi
     if [ -z "$base_stream" ] || [ "$base_stream" = "0" ]; then
-        base_stream=60000
+        base_stream=32500
     fi
 
     # Check if UFW is enabled

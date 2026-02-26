@@ -2,7 +2,7 @@ package views
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/tjsturos/qtools/go-qtools/internal/tui/components"
+	"github.com/quilibrium/qtools/go-qtools/internal/tui/components"
 )
 
 // MenuView wraps the menu component

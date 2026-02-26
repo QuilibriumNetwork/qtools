@@ -23,6 +23,7 @@ type Config struct {
 	Settings          *SettingsConfig       `yaml:"settings,omitempty"`
 	Dev               *DevConfig            `yaml:"dev,omitempty"`
 	NodeRegistry      *NodeRegistry         `yaml:"node_registry,omitempty"` // For desktop app integration
+	QStorage          *QStorageConfig       `yaml:"qstorage,omitempty"`
 }
 
 // SSHConfig represents SSH configuration
@@ -64,7 +65,6 @@ type ClusteringConfig struct {
 	MasterServiceName    string   `yaml:"master_service_name"`
 	LocalOnly            bool     `yaml:"local_only"`
 	DataWorkerServiceName string  `yaml:"data_worker_service_name"`
-	BasePort             int      `yaml:"base_port"`
 	WorkerBaseP2PPort    int      `yaml:"worker_base_p2p_port"`
 	WorkerBaseStreamPort int      `yaml:"worker_base_stream_port"`
 	MasterStreamPort     int      `yaml:"master_stream_port"`
@@ -82,7 +82,6 @@ type ClusteringConfig struct {
 // DataWorkerServiceConfig represents data worker service configuration
 type DataWorkerServiceConfig struct {
 	WorkerCount int `yaml:"worker_count"`
-	BasePort    int `yaml:"base_port"`
 	BaseIndex   int `yaml:"base_index"`
 }
 
@@ -138,4 +137,15 @@ type RegisteredNode struct {
 	AuthToken  string `yaml:"auth_token"`
 	PeerID     string `yaml:"peer_id,omitempty"`
 	LastSeen   string `yaml:"last_seen,omitempty"`
+}
+
+// QStorageConfig represents QStorage (S3-compatible) configuration
+type QStorageConfig struct {
+	AccessKeyID string `yaml:"access_key_id,omitempty"`
+	AccessKey   string `yaml:"access_key,omitempty"`
+	AccountID   string `yaml:"account_id,omitempty"`
+	Bucket      string `yaml:"bucket,omitempty"`
+	Region      string `yaml:"region,omitempty"`
+	EndpointURL string `yaml:"endpoint_url,omitempty"`
+	Prefix      string `yaml:"prefix,omitempty"`
 }

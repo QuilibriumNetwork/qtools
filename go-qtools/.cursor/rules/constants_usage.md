@@ -1,5 +1,9 @@
 # Constants Usage Guide
 
+## Repository Import Namespace
+
+All examples and references in this file should use `github.com/quilibrium/qtools/go-qtools/...` import paths.
+
 ## Rule: Always Use Constants Package
 
 **Problem:** Hardcoding values like `"quilibrium"`, `"qtools"`, `"/home/quilibrium/qtools"` throughout the codebase leads to inconsistency and maintenance issues.
@@ -23,7 +27,7 @@ The `internal/constants` package should define:
 ### Basic Constants
 
 ```go
-import "github.com/tjsturos/qtools/go-qtools/internal/constants"
+import "github.com/quilibrium/qtools/go-qtools/internal/constants"
 
 // ✅ GOOD
 user := constants.DefaultUser
@@ -36,8 +40,8 @@ serviceName := constants.DefaultServiceName
 
 ```go
 import (
-    "github.com/tjsturos/qtools/go-qtools/internal/constants"
-    "github.com/tjsturos/qtools/go-qtools/internal/config"
+    "github.com/quilibrium/qtools/go-qtools/internal/constants"
+    "github.com/quilibrium/qtools/go-qtools/internal/config"
 )
 
 // ✅ GOOD - Check config first, then default
@@ -82,13 +86,13 @@ configPath := "/home/quilibrium/qtools/config.yml"
 serviceName := "ceremonyclient"
 
 // Don't hardcode binary paths
-nodePath := "/usr/local/bin/node"
+nodePath := "/usr/local/bin/quilibrium-node"
 ```
 
 ### ✅ GOOD - Use Constants
 
 ```go
-import "github.com/tjsturos/qtools/go-qtools/internal/constants"
+import "github.com/quilibrium/qtools/go-qtools/internal/constants"
 
 user := constants.DefaultUser
 group := constants.DefaultGroup
@@ -107,7 +111,7 @@ When reviewing code, check for:
 - [ ] Hardcoded `"/home/quilibrium/qtools"` → Use `constants.DefaultQtoolsPath`
 - [ ] Hardcoded `"/home/quilibrium/node"` → Use `constants.DefaultNodePath`
 - [ ] Hardcoded `"ceremonyclient"` → Use `constants.GetServiceName(cfg)`
-- [ ] Hardcoded `"/usr/local/bin/node"` → Use `constants.DefaultNodeBinaryPath`
+- [ ] Hardcoded `"/usr/local/bin/quilibrium-node"` → Use `constants.DefaultNodeBinaryPath`
 - [ ] Hardcoded ports (8336, 8337, 8338) → Use port constants
 - [ ] Hardcoded permissions (0755, 0644) → Use permission constants
 
@@ -143,15 +147,15 @@ const (
     
     DefaultServiceName = "ceremonyclient"
     
-    DefaultNodeBinaryPath   = "/usr/local/bin/node"
+    DefaultNodeBinaryPath   = "/usr/local/bin/quilibrium-node"
     DefaultQtoolsBinaryPath = "/usr/local/bin/qtools"
     
     DefaultP2PListenPort        = 8336
     DefaultStreamPort           = 8340
     DefaultGRPCPort            = 8337
     DefaultRESTPort             = 8338
-    DefaultWorkerBaseP2PPort    = 50000
-    DefaultWorkerBaseStreamPort = 60000
+    DefaultWorkerBaseP2PPort    = 25000
+    DefaultWorkerBaseStreamPort = 32500
     
     DefaultDirPerm  = 0755
     DefaultFilePerm = 0644

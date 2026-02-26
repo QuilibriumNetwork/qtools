@@ -7,11 +7,10 @@ export SSH_CLUSTER_KEY=$SSH_KEY_PATH/$SSH_KEY_PAIR_NAME
 export DEFAULT_USER=$(eval echo $(yq eval '.service.clustering.default_user // "ubuntu"' $QTOOLS_CONFIG_FILE))
 export DEFAULT_SSH_PORT=$(yq eval '.service.clustering.default_ssh_port // "22"' $QTOOLS_CONFIG_FILE)
 export QUIL_DATA_WORKER_SERVICE_NAME="$(yq eval '.service.clustering.data_worker_service_name // "dataworker"' $QTOOLS_CONFIG_FILE)"
-export BASE_PORT=$(yq eval '.service.clustering.base_port // "40000"' $QTOOLS_CONFIG_FILE)
-export WORKER_BASE_P2P_PORT=$(yq eval '.engine.dataWorkerBaseP2PPort // .service.clustering.worker_base_p2p_port // "50000"' $QUIL_CONFIG_FILE $QTOOLS_CONFIG_FILE)
-export WORKER_BASE_STREAM_PORT=$(yq eval '.engine.dataWorkerBaseStreamPort // .service.clustering.worker_base_stream_port // "60000"' $QUIL_CONFIG_FILE $QTOOLS_CONFIG_FILE)
-if [ -z "$WORKER_BASE_P2P_PORT" ] || [ "$WORKER_BASE_P2P_PORT" = "0" ]; then WORKER_BASE_P2P_PORT=50000; fi
-if [ -z "$WORKER_BASE_STREAM_PORT" ] || [ "$WORKER_BASE_STREAM_PORT" = "0" ]; then WORKER_BASE_STREAM_PORT=60000; fi
+export WORKER_BASE_P2P_PORT=$(yq eval '.engine.dataWorkerBaseP2PPort // .service.clustering.worker_base_p2p_port // "25000"' $QUIL_CONFIG_FILE $QTOOLS_CONFIG_FILE)
+export WORKER_BASE_STREAM_PORT=$(yq eval '.engine.dataWorkerBaseStreamPort // .service.clustering.worker_base_stream_port // "32500"' $QUIL_CONFIG_FILE $QTOOLS_CONFIG_FILE)
+if [ -z "$WORKER_BASE_P2P_PORT" ] || [ "$WORKER_BASE_P2P_PORT" = "0" ]; then WORKER_BASE_P2P_PORT=25000; fi
+if [ -z "$WORKER_BASE_STREAM_PORT" ] || [ "$WORKER_BASE_STREAM_PORT" = "0" ]; then WORKER_BASE_STREAM_PORT=32500; fi
 
 MASTER_SERVICE_NAME=$(yq eval '.service.clustering.master_service_name' $QTOOLS_CONFIG_FILE)
 MASTER_SERVICE_FILE="/etc/systemd/system/$MASTER_SERVICE_NAME.service"
@@ -516,7 +515,6 @@ update_quil_config() {
         ip=$(echo "$server" | yq eval '.ip' -)
         remote_user=$(echo "$server" | yq eval ".user // \"$DEFAULT_USER\"" -)
         ssh_port=$(echo "$server" | yq eval ".ssh_port // \"$DEFAULT_SSH_PORT\"" -)
-        base_port=$(echo "$server" | yq eval ".base_port // \"$BASE_PORT\"" -)
         data_worker_count=$(echo "$server" | yq eval '.data_worker_count // "false"' -)
         cores_to_use=$(echo "$server" | yq eval '.cores_to_use // "false"' -)
         available_cores=$(nproc)

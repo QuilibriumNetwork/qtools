@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
-	"github.com/tjsturos/qtools/go-qtools/internal/node"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/node"
 )
 
 // StartWorkers starts all workers

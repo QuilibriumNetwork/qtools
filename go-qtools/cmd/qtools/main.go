@@ -5,15 +5,15 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/quilibrium/qtools/go-qtools/cmd/qtools/nodecmd"
+	"github.com/quilibrium/qtools/go-qtools/cmd/qtools/qclientcmd"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/node"
+	"github.com/quilibrium/qtools/go-qtools/internal/tui"
 	"github.com/spf13/cobra"
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
-	"github.com/tjsturos/qtools/go-qtools/internal/node"
-	"github.com/tjsturos/qtools/go-qtools/internal/service"
-	"github.com/tjsturos/qtools/go-qtools/internal/tui"
 )
 
 var (
@@ -29,342 +29,14 @@ func main() {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:   "qtools",
-		Short: "Quilibrium Tools - Node management CLI",
-		Long:  "Quilibrium Tools provides CLI and TUI interfaces for managing Quilibrium nodes.",
+		Use:     "qtools",
+		Short:   "Quilibrium Tools - Node management CLI",
+		Long:    "Quilibrium Tools provides CLI and TUI interfaces for managing Quilibrium nodes.",
 		Version: version,
 	}
 
-	// Node commands - All node-related operations should be under "qtools node"
-	// This includes: setup, install, update, download, config, info, etc.
-	nodeCmd := &cobra.Command{
-		Use:   "node",
-		Short: "Node management commands",
-		Long:  "All commands related to Quilibrium node management, including setup, installation, updates, configuration, and status queries.",
-	}
-
-	setupCmd := &cobra.Command{
-		Use:   "setup [flags]",
-		Short: "Setup node (defaults to manual mode)",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			automatic, _ := cmd.Flags().GetBool("automatic")
-			workers, _ := cmd.Flags().GetInt("workers")
-
-			fmt.Printf("Setting up node (automatic: %v, workers: %d)\n", automatic, workers)
-			// TODO: Implement actual setup logic
-			return nil
-		},
-	}
-	setupCmd.Flags().Bool("automatic", false, "Use automatic mode instead of manual mode")
-	setupCmd.Flags().Int("workers", 0, "Number of workers (0 = auto-calculate)")
-
-	modeCmd := &cobra.Command{
-		Use:   "mode [flags]",
-		Short: "Toggle between manual and automatic mode",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			manual, _ := cmd.Flags().GetBool("manual")
-			automatic, _ := cmd.Flags().GetBool("automatic")
-
-			if manual && automatic {
-				return fmt.Errorf("cannot specify both --manual and --automatic")
-			}
-
-			fmt.Printf("Toggling mode (manual: %v, automatic: %v)\n", manual, automatic)
-			// TODO: Implement actual mode toggle logic
-			return nil
-		},
-	}
-	modeCmd.Flags().Bool("manual", false, "Enable manual mode")
-	modeCmd.Flags().Bool("automatic", false, "Enable automatic mode")
-
-	installCmd := &cobra.Command{
-		Use:   "install [flags]",
-		Short: "Complete installation of the node",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			peerID, _ := cmd.Flags().GetString("peer-id")
-			listenPort, _ := cmd.Flags().GetInt("listen-port")
-			streamPort, _ := cmd.Flags().GetInt("stream-port")
-
-			fmt.Printf("Installing node (peer-id: %s, listen-port: %d, stream-port: %d)\n", peerID, listenPort, streamPort)
-			// TODO: Implement actual install logic
-			return nil
-		},
-	}
-	installCmd.Flags().String("peer-id", "", "Peer ID for the node")
-	installCmd.Flags().Int("listen-port", 8336, "P2P listen port")
-	installCmd.Flags().Int("stream-port", 8340, "Stream listen port")
-
-	// Node config subcommands - Always for quil/node config
-	nodeConfigCmd := &cobra.Command{
-		Use:   "config [path]",
-		Short: "Browse node configuration (TUI)",
-		Long: `Browse Quil node configuration files in TUI mode.
-
-If no path is provided, shows top-level keys.
-If a path is provided (e.g., "p2p"), navigates directly to that section.
-
-Use subcommands for CLI operations (bypasses TUI):
-  qtools node config get <path>   # Get config value (CLI)
-  qtools node config set <path> <value>  # Set config value (CLI)
-
-Examples:
-  qtools node config              # Browse quil config from root (TUI)
-  qtools node config p2p          # Navigate to p2p section (quil config, TUI)
-  qtools node config get .p2p.listen-port  # Get value via CLI (no TUI)
-  qtools node config set .p2p.listen-port 8336  # Set value via CLI (no TUI)
-`,
-		Args: cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load qtools config (needed for context, but we're viewing quil config)
-			configPath := os.Getenv("QTOOLS_CONFIG_FILE")
-			if configPath == "" {
-				configPath = "/home/quilibrium/qtools/config.yml"
-			}
-
-			cfg, err := config.LoadConfig(configPath)
-			if err != nil {
-				cfg = config.GenerateDefaultConfig()
-			}
-
-			initialPath := ""
-			if len(args) > 0 {
-				initialPath = args[0]
-			}
-
-			// Always use quil config for node config command
-			return tui.RunConfigView(cfg, initialPath, tui.ConfigTypeQuil)
-		},
-	}
-
-	nodeConfigGetCmd := &cobra.Command{
-		Use:   "get <path>",
-		Short: "Get node config value",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load config
-			configPath := os.Getenv("QTOOLS_CONFIG_FILE")
-			if configPath == "" {
-				configPath = "/home/quilibrium/qtools/config.yml"
-			}
-
-			cfg, err := config.LoadConfig(configPath)
-			if err != nil {
-				cfg = config.GenerateDefaultConfig()
-			}
-
-			configType, _ := cmd.Flags().GetString("config")
-			defaultVal, _ := cmd.Flags().GetString("default")
-
-			opts := node.ConfigCommandOptions{
-				ConfigType: configType,
-				Default:    defaultVal,
-			}
-
-			return node.ExecuteConfigCommand(node.ConfigCommandGet, args[0], "", opts, cfg)
-		},
-	}
-	nodeConfigGetCmd.Flags().String("config", "quil", "Config type: qtools or quil (default: quil for node config)")
-	nodeConfigGetCmd.Flags().String("default", "", "Default value if key not found")
-
-	nodeConfigSetCmd := &cobra.Command{
-		Use:   "set <path> <value>",
-		Short: "Set node config value",
-		Args:  cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load config
-			configPath := os.Getenv("QTOOLS_CONFIG_FILE")
-			if configPath == "" {
-				configPath = "/home/quilibrium/qtools/config.yml"
-			}
-
-			cfg, err := config.LoadConfig(configPath)
-			if err != nil {
-				cfg = config.GenerateDefaultConfig()
-			}
-
-			configType, _ := cmd.Flags().GetString("config")
-			quiet, _ := cmd.Flags().GetBool("quiet")
-
-			opts := node.ConfigCommandOptions{
-				ConfigType: configType,
-				Quiet:      quiet,
-			}
-
-			return node.ExecuteConfigCommand(node.ConfigCommandSet, args[0], args[1], opts, cfg)
-		},
-	}
-	nodeConfigSetCmd.Flags().String("config", "qtools", "Config type: qtools or quil")
-	nodeConfigSetCmd.Flags().Bool("quiet", false, "Suppress output")
-
-	nodeConfigCmd.AddCommand(nodeConfigGetCmd, nodeConfigSetCmd)
-
-	// Node info commands
-	nodeInfoCmd := &cobra.Command{
-		Use:   "info",
-		Short: "Get node information",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Node information:")
-			// TODO: Implement node info
-			return nil
-		},
-	}
-
-	nodePeerIDCmd := &cobra.Command{
-		Use:   "peer-id",
-		Short: "Get node peer ID",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Peer ID:")
-			// TODO: Implement peer-id
-			return nil
-		},
-	}
-
-	nodeBalanceCmd := &cobra.Command{
-		Use:   "balance",
-		Short: "Get node balance",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Balance:")
-			// TODO: Implement balance
-			return nil
-		},
-	}
-
-	nodeSeniorityCmd := &cobra.Command{
-		Use:   "seniority",
-		Short: "Get node seniority",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Seniority:")
-			// TODO: Implement seniority
-			return nil
-		},
-	}
-
-	nodeWorkerCountCmd := &cobra.Command{
-		Use:   "worker-count",
-		Short: "Get worker count",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Worker count:")
-			// TODO: Implement worker-count
-			return nil
-		},
-	}
-
-	nodeUpdateCmd := &cobra.Command{
-		Use:   "update [flags]",
-		Short: "Update node binary",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load config
-			configPath := os.Getenv("QTOOLS_CONFIG_FILE")
-			if configPath == "" {
-				configPath = "/home/quilibrium/qtools/config.yml"
-			}
-
-			cfg, err := config.LoadConfig(configPath)
-			if err != nil {
-				cfg = config.GenerateDefaultConfig()
-			}
-
-			force, _ := cmd.Flags().GetBool("force")
-			skipClean, _ := cmd.Flags().GetBool("skip-clean")
-			auto, _ := cmd.Flags().GetBool("auto")
-
-			opts := node.UpdateOptions{
-				Force:     force,
-				SkipClean: skipClean,
-				Auto:      auto,
-			}
-
-			if err := node.UpdateNode(opts, cfg); err != nil {
-				return err
-			}
-
-			// Update service files and restart after node update
-			fmt.Println("Updating service files...")
-			serviceOpts, err := service.LoadServiceOptionsFromConfig(cfg)
-			if err != nil {
-				return fmt.Errorf("failed to load service options: %w", err)
-			}
-
-			serviceName := "ceremonyclient"
-			if cfg.Service != nil && cfg.Service.FileName != "" {
-				serviceName = cfg.Service.FileName
-			}
-
-			serviceConfig := &service.ServiceConfig{
-				ServiceOptions: serviceOpts,
-				ServiceName:    serviceName,
-				WorkingDir:     config.GetNodePath(),
-				BinaryPath:     "/usr/local/bin/node",
-				User:          "quilibrium",
-				Group:         "qtools",
-				IsWorker:      false,
-			}
-
-			if err := service.UpdateServiceFile(serviceName, serviceConfig); err != nil {
-				return fmt.Errorf("failed to update service file: %w", err)
-			}
-
-			// Update worker service files if in manual mode
-			if node.IsManualMode(cfg) {
-				workerCount := node.GetWorkerCount(cfg)
-				for i := 1; i <= workerCount; i++ {
-					workerConfig := &service.ServiceConfig{
-						ServiceOptions: serviceOpts,
-						ServiceName:    serviceName,
-						WorkingDir:     config.GetNodePath(),
-						BinaryPath:     "/usr/local/bin/node",
-						User:          "quilibrium",
-						Group:         "qtools",
-						IsWorker:      true,
-						WorkerIndex:   i,
-					}
-					workerServiceName := fmt.Sprintf("%s-worker@%d", serviceName, i)
-					if err := service.UpdateServiceFile(workerServiceName, workerConfig); err != nil {
-						return fmt.Errorf("failed to update worker service file: %w", err)
-					}
-				}
-			}
-
-			// Restart service
-			fmt.Println("Restarting service...")
-			if err := service.RestartService(service.RestartOptions{}, cfg); err != nil {
-				return fmt.Errorf("failed to restart service: %w", err)
-			}
-
-			fmt.Println("Node update completed successfully")
-			return nil
-		},
-	}
-	nodeUpdateCmd.Flags().Bool("force", false, "Force update")
-	nodeUpdateCmd.Flags().Bool("skip-clean", false, "Skip cleanup")
-	nodeUpdateCmd.Flags().Bool("auto", false, "Auto-update mode")
-
-	nodeDownloadCmd := &cobra.Command{
-		Use:   "download [flags]",
-		Short: "Download node binary",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load config
-			configPath := os.Getenv("QTOOLS_CONFIG_FILE")
-			if configPath == "" {
-				configPath = "/home/quilibrium/qtools/config.yml"
-			}
-
-			cfg, err := config.LoadConfig(configPath)
-			if err != nil {
-				cfg = config.GenerateDefaultConfig()
-			}
-
-			version, _ := cmd.Flags().GetString("version")
-			link, _ := cmd.Flags().GetBool("link")
-
-			return node.DownloadNode(cfg, version, link)
-		},
-	}
-	nodeDownloadCmd.Flags().String("version", "", "Specific version to download (default: latest)")
-	nodeDownloadCmd.Flags().Bool("link", false, "Create symlink after download")
-
-	nodeCmd.AddCommand(setupCmd, modeCmd, installCmd, nodeConfigCmd, nodeInfoCmd, nodePeerIDCmd, 
-		nodeBalanceCmd, nodeSeniorityCmd, nodeWorkerCountCmd, nodeUpdateCmd, nodeDownloadCmd)
+	// Node commands (extracted into dedicated package)
+	nodeCmd := nodecmd.NewCommand()
 
 	// Service commands
 	serviceCmd := &cobra.Command{
@@ -614,84 +286,8 @@ Examples:
 
 	updateCmd.AddCommand(updateSelfCmd, updateKernelCmd)
 
-	// QClient commands - All qclient-related operations should be under "qtools qclient"
-	// This includes: download, transfer, merge, split, coins, account, etc.
-	qclientCmd := &cobra.Command{
-		Use:   "qclient",
-		Short: "QClient management commands",
-		Long:  "All commands related to QClient operations, including downloading binaries, token management (transfer, merge, split), and account operations.",
-	}
-
-	qclientDownloadCmd := &cobra.Command{
-		Use:   "download [flags]",
-		Short: "Download qclient binary",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load config
-			configPath := os.Getenv("QTOOLS_CONFIG_FILE")
-			if configPath == "" {
-				configPath = "/home/quilibrium/qtools/config.yml"
-			}
-
-			cfg, err := config.LoadConfig(configPath)
-			if err != nil {
-				cfg = config.GenerateDefaultConfig()
-			}
-
-			version, _ := cmd.Flags().GetString("version")
-
-			return node.DownloadQClient(cfg, version)
-		},
-	}
-	qclientDownloadCmd.Flags().String("version", "", "Specific version to download (default: latest)")
-
-	qclientCreateSymlinkCmd := &cobra.Command{
-		Use:   "create-symlink",
-		Short: "Create qclient symlink to qtools binary",
-		Long:  "Creates a symlink at /usr/local/bin/qclient pointing to the qtools binary, allowing 'qclient' to be used as an alias for 'qtools qclient'.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get qtools binary path
-			qtoolsBinaryPath, err := os.Executable()
-			if err != nil {
-				// Fallback to os.Args[0]
-				qtoolsBinaryPath = os.Args[0]
-				if !filepath.IsAbs(qtoolsBinaryPath) {
-					cwd, _ := os.Getwd()
-					qtoolsBinaryPath = filepath.Join(cwd, qtoolsBinaryPath)
-				}
-			}
-
-			// Resolve symlinks to get the actual binary path
-			if linkTarget, err := os.Readlink(qtoolsBinaryPath); err == nil {
-				if filepath.IsAbs(linkTarget) {
-					qtoolsBinaryPath = linkTarget
-				} else {
-					qtoolsBinaryPath = filepath.Join(filepath.Dir(qtoolsBinaryPath), linkTarget)
-				}
-			}
-
-			qclientSymlinkPath := "/usr/local/bin/qclient"
-
-			// Remove old symlink if exists
-			if _, err := os.Lstat(qclientSymlinkPath); err == nil {
-				if err := os.Remove(qclientSymlinkPath); err != nil {
-					return fmt.Errorf("failed to remove old symlink: %w", err)
-				}
-			}
-
-			// Create qclient symlink pointing to qtools binary
-			cmdExec := exec.Command("sudo", "ln", "-sf", qtoolsBinaryPath, qclientSymlinkPath)
-			if err := cmdExec.Run(); err != nil {
-				return fmt.Errorf("failed to create qclient symlink: %w", err)
-			}
-
-			fmt.Printf("✓ Created symlink: %s -> %s\n", qclientSymlinkPath, qtoolsBinaryPath)
-			fmt.Println("You can now use 'qclient' as an alias for 'qtools qclient'")
-
-			return nil
-		},
-	}
-
-	qclientCmd.AddCommand(qclientDownloadCmd, qclientCreateSymlinkCmd)
+	// QClient commands (extracted into dedicated package)
+	qclientCmd := qclientcmd.NewCommand()
 
 	// Toggle commands
 	toggleCmd := &cobra.Command{
@@ -709,9 +305,9 @@ Examples:
 				configPath = "/home/quilibrium/qtools/config.yml"
 			}
 
-			cfg, err := config.LoadConfig(configPath)
+			qtoolsConfig, err := config.LoadConfig(configPath)
 			if err != nil {
-				cfg = config.GenerateDefaultConfig()
+				qtoolsConfig = config.GenerateDefaultConfig()
 			}
 
 			on, _ := cmd.Flags().GetBool("on")
@@ -719,7 +315,7 @@ Examples:
 
 			// Get current status using config path
 			path := "scheduled_tasks.updates.node.enabled"
-			currentVal, err := config.GetConfigValue(cfg, path)
+			currentVal, err := config.GetConfigValue(qtoolsConfig, path)
 			currentStatus := false
 			if err == nil {
 				if val, ok := currentVal.(bool); ok {
@@ -748,12 +344,12 @@ Examples:
 			}
 
 			// Set new status
-			if err := config.SetConfigValue(cfg, path, newStatus); err != nil {
+			if err := config.SetConfigValue(qtoolsConfig, path, newStatus); err != nil {
 				return fmt.Errorf("failed to set config value: %w", err)
 			}
 
 			// Save config
-			if err := config.SaveConfig(cfg, configPath); err != nil {
+			if err := config.SaveConfig(qtoolsConfig, configPath); err != nil {
 				return fmt.Errorf("failed to save config: %w", err)
 			}
 
@@ -782,9 +378,9 @@ Examples:
 				configPath = "/home/quilibrium/qtools/config.yml"
 			}
 
-			cfg, err := config.LoadConfig(configPath)
+			qtoolsConfig, err := config.LoadConfig(configPath)
 			if err != nil {
-				cfg = config.GenerateDefaultConfig()
+				qtoolsConfig = config.GenerateDefaultConfig()
 			}
 
 			on, _ := cmd.Flags().GetBool("on")
@@ -792,7 +388,7 @@ Examples:
 
 			// Get current status using config path
 			path := "scheduled_tasks.updates.qtools.enabled"
-			currentVal, err := config.GetConfigValue(cfg, path)
+			currentVal, err := config.GetConfigValue(qtoolsConfig, path)
 			currentStatus := false
 			if err == nil {
 				if val, ok := currentVal.(bool); ok {
@@ -821,12 +417,12 @@ Examples:
 			}
 
 			// Set new status
-			if err := config.SetConfigValue(cfg, path, newStatus); err != nil {
+			if err := config.SetConfigValue(qtoolsConfig, path, newStatus); err != nil {
 				return fmt.Errorf("failed to set config value: %w", err)
 			}
 
 			// Save config
-			if err := config.SaveConfig(cfg, configPath); err != nil {
+			if err := config.SaveConfig(qtoolsConfig, configPath); err != nil {
 				return fmt.Errorf("failed to save config: %w", err)
 			}
 
@@ -948,9 +544,9 @@ Examples:
 				configPath = "/home/quilibrium/qtools/config.yml"
 			}
 
-			cfg, err := config.LoadConfig(configPath)
+			qtoolsConfig, err := config.LoadConfig(configPath)
 			if err != nil {
-				cfg = config.GenerateDefaultConfig()
+				qtoolsConfig = config.GenerateDefaultConfig()
 			}
 
 			initialPath := ""
@@ -959,7 +555,7 @@ Examples:
 			}
 
 			// Always use qtools config for top-level config command
-			return tui.RunConfigView(cfg, initialPath, tui.ConfigTypeQtools)
+			return tui.RunConfigView(qtoolsConfig, initialPath, tui.ConfigTypeQtools)
 		},
 	}
 
@@ -974,9 +570,9 @@ Examples:
 				configPath = "/home/quilibrium/qtools/config.yml"
 			}
 
-			cfg, err := config.LoadConfig(configPath)
+			qtoolsConfig, err := config.LoadConfig(configPath)
 			if err != nil {
-				cfg = config.GenerateDefaultConfig()
+				qtoolsConfig = config.GenerateDefaultConfig()
 			}
 
 			defaultVal, _ := cmd.Flags().GetString("default")
@@ -986,7 +582,7 @@ Examples:
 				Default:    defaultVal,
 			}
 
-			return node.ExecuteConfigCommand(node.ConfigCommandGet, args[0], "", opts, cfg)
+			return node.ExecuteConfigCommand(node.ConfigCommandGet, args[0], "", opts, qtoolsConfig)
 		},
 	}
 	configGetCmd.Flags().String("default", "", "Default value if key not found")
@@ -1002,9 +598,9 @@ Examples:
 				configPath = "/home/quilibrium/qtools/config.yml"
 			}
 
-			cfg, err := config.LoadConfig(configPath)
+			qtoolsConfig, err := config.LoadConfig(configPath)
 			if err != nil {
-				cfg = config.GenerateDefaultConfig()
+				qtoolsConfig = config.GenerateDefaultConfig()
 			}
 
 			quiet, _ := cmd.Flags().GetBool("quiet")
@@ -1014,7 +610,7 @@ Examples:
 				Quiet:      quiet,
 			}
 
-			return node.ExecuteConfigCommand(node.ConfigCommandSet, args[0], args[1], opts, cfg)
+			return node.ExecuteConfigCommand(node.ConfigCommandSet, args[0], args[1], opts, qtoolsConfig)
 		},
 	}
 	configSetCmd.Flags().Bool("quiet", false, "Suppress output")
@@ -1103,14 +699,14 @@ Supported shells: bash, zsh, fish, powershell
 				configPath = "/home/quilibrium/qtools/config.yml"
 			}
 
-			cfg, err := config.LoadConfig(configPath)
+			qtoolsConfig, err := config.LoadConfig(configPath)
 			if err != nil {
 				// Create default config if it doesn't exist
-				cfg = config.GenerateDefaultConfig()
+				qtoolsConfig = config.GenerateDefaultConfig()
 			}
 
 			// Run TUI
-			return tui.Run(cfg)
+			return tui.Run(qtoolsConfig)
 		},
 	}
 

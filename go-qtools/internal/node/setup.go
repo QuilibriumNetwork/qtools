@@ -3,17 +3,17 @@ package node
 import (
 	"fmt"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
 )
 
 // SetupOptions represents options for node setup
 type SetupOptions struct {
-	AutomaticMode bool
-	WorkerCount   int
-	PeerID        string
-	ListenPort    int
-	StreamPort    int
-	BaseP2PPort   int
+	AutomaticMode  bool
+	WorkerCount    int
+	PeerID         string
+	ListenPort     int
+	StreamPort     int
+	BaseP2PPort    int
 	BaseStreamPort int
 }
 
@@ -68,7 +68,7 @@ func SetupManualMode(cfg *config.Config, workerCount int, opts SetupOptions) err
 			baseP2P = cfg.Service.Clustering.WorkerBaseP2PPort
 		}
 		if baseP2P == 0 {
-			baseP2P = 50000 // Default
+			baseP2P = 25000 // Default
 		}
 	}
 
@@ -78,7 +78,7 @@ func SetupManualMode(cfg *config.Config, workerCount int, opts SetupOptions) err
 			baseStream = cfg.Service.Clustering.WorkerBaseStreamPort
 		}
 		if baseStream == 0 {
-			baseStream = 60000 // Default
+			baseStream = 32500 // Default
 		}
 	}
 

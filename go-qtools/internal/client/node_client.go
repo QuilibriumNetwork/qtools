@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
-	"github.com/tjsturos/qtools/go-qtools/internal/node"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/node"
 )
 
 // NodeClient provides a client interface for interacting with Quilibrium nodes
@@ -21,10 +21,7 @@ type NodeClient struct {
 
 // NewNodeClient creates a new node client
 func NewNodeClient(cfg *config.Config) *NodeClient {
-	binaryPath := "/usr/local/bin/node"
-	if cfg != nil && cfg.Service != nil && cfg.Service.LinkName != "" {
-		binaryPath = cfg.Service.LinkName
-	}
+	binaryPath := "/usr/local/bin/quilibrium-node"
 
 	configPath := config.GetNodeConfigPath()
 	grpcAddr := "localhost:8337"
@@ -91,9 +88,9 @@ func (nc *NodeClient) GetPeerID() (string, error) {
 func (nc *NodeClient) GetPeerInfoViaGRPC() (*PeerInfo, error) {
 	// Stub: Would use grpcurl or gRPC client library
 	// Reference: scripts/grpc/peer-info.sh uses `grpcurl -plaintext localhost:8337`
-	
+
 	// For now, try to use grpcurl if available
-	cmd := exec.Command("grpcurl", "-plaintext", nc.grpcAddr, 
+	cmd := exec.Command("grpcurl", "-plaintext", nc.grpcAddr,
 		"quilibrium.node.node.pb.NodeService.GetPeerInfo")
 	output, err := cmd.Output()
 	if err != nil {
@@ -135,12 +132,12 @@ func (nc *NodeClient) GetNodeInfoViaGRPC() (*NodeInfo, error) {
 	nodeInfo := &NodeInfo{}
 
 	outputStr := string(output)
-	
+
 	// Extract fields using regex patterns
 	if peerIDMatch := regexp.MustCompile(`"peerId"\s*:\s*"([^"]+)"`).FindStringSubmatch(outputStr); len(peerIDMatch) > 1 {
 		nodeInfo.PeerID = peerIDMatch[1]
 	}
-	
+
 	if versionMatch := regexp.MustCompile(`"version"\s*:\s*"([^"]+)"`).FindStringSubmatch(outputStr); len(versionMatch) > 1 {
 		nodeInfo.Version = versionMatch[1]
 	}

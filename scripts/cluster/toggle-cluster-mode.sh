@@ -36,8 +36,8 @@ fi
 if [ "$RESET_MODE" == "true" ]; then
     qtools config set-value service.clustering.enabled "true" --quiet
     # 2.1+: initialize worker arrays and ensure base ports exist
-    yq -i '.engine.dataWorkerBaseP2PPort = (.engine.dataWorkerBaseP2PPort // 50000)' $QUIL_CONFIG_FILE
-    yq -i '.engine.dataWorkerBaseStreamPort = (.engine.dataWorkerBaseStreamPort // 60000)' $QUIL_CONFIG_FILE
+    yq -i '.engine.dataWorkerBaseP2PPort = (.engine.dataWorkerBaseP2PPort // 25000)' $QUIL_CONFIG_FILE
+    yq -i '.engine.dataWorkerBaseStreamPort = (.engine.dataWorkerBaseStreamPort // 32500)' $QUIL_CONFIG_FILE
     yq -i '.engine.dataWorkerP2PMultiaddrs = []' $QUIL_CONFIG_FILE
     yq -i '.engine.dataWorkerStreamMultiaddrs = []' $QUIL_CONFIG_FILE
     qtools cluster-setup --master

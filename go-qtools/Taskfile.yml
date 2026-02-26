@@ -5,6 +5,8 @@ vars:
   DIST_PATH: dist
   OUTPUT_PATH: '{{.DIST_PATH}}/{{.BINARY_NAME}}'
   OUTPUT_PATH_ARM64: '{{.DIST_PATH}}/{{.BINARY_NAME}}-arm64'
+  QSTORAGE_DEFAULT_REGION: q-world-1
+  QSTORAGE_DEFAULT_ENDPOINT: https://qstorage.quilibrium.com
   DOCKER_IMAGE: qtools-builder
   DOCKER_IMAGE_ARM64: qtools-builder-arm64
   DOCKERFILE: Dockerfile
@@ -75,6 +77,78 @@ tasks:
     desc: Run tests
     cmds:
       - go test ./...
+
+  test:functional:incus:
+    desc: Run Incus functional matrix against fresh binary builds
+    vars:
+      SCENARIO_ARG: '{{if .SCENARIO}}--scenario {{.SCENARIO}}{{end}}'
+      OS_ARG: '{{if .OS}}--os {{.OS}}{{end}}'
+    cmds:
+      - bash tests/functional/incus/run.sh {{.SCENARIO_ARG}} {{.OS_ARG}} {{.CLI_ARGS}}
+
+  test:functional:incus:quick:
+    desc: Run fast Incus node-update and CLI-surface checks
+    vars:
+      OS_ARG: '{{if .OS}}--os {{.OS}}{{end}}'
+    cmds:
+      - bash tests/functional/incus/run.sh --scenario quick {{.OS_ARG}} {{.CLI_ARGS}}
+
+  incus:shell:
+    desc: Open interactive shell in qtools Incus test container
+    cmds:
+      - |
+        set -euo pipefail
+        NAME="{{default "" .NAME}}"
+
+        if [ -z "$NAME" ]; then
+          NAME=`incus list --format csv -c ns | awk -F, '$1 ~ /^qtools-ft-/ && $2 == "RUNNING" {print $1; exit}'`
+        fi
+
+        if [ -z "$NAME" ]; then
+          NAME=`incus list --format csv -c ns | awk -F, '$1 ~ /^qtools-ft-/ {print $1; exit}'`
+        fi
+
+        if [ -z "$NAME" ]; then
+          echo "No qtools functional Incus container found."
+          echo "Run a functional test first (for example: task test:functional:incus OS=ubuntu-22.04)."
+          exit 1
+        fi
+
+        STATE=`incus list --format csv -c ns | awk -F, -v n="$NAME" '$1 == n {print $2; exit}'`
+        if [ "$STATE" != "RUNNING" ]; then
+          echo "Starting $NAME..."
+          incus start "$NAME"
+        fi
+
+        echo "Opening shell in $NAME..."
+        exec incus exec "$NAME" -- bash
+
+  incus:shell:fresh:
+    desc: Launch a fresh Incus container and open an interactive shell
+    cmds:
+      - |
+        set -euo pipefail
+        IMAGE="{{default "images:ubuntu/22.04" .IMAGE}}"
+        NAME="{{default "" .NAME}}"
+
+        if [ -z "$NAME" ]; then
+          NAME="qtools-ft-manual-`date +%Y%m%d%H%M%S`"
+        fi
+
+        EXISTS=`incus list --format csv -c n | awk -F, -v n="$NAME" '$1 == n {print 1; exit}'`
+        if [ "$EXISTS" != "1" ]; then
+          echo "Launching $NAME from $IMAGE..."
+          incus launch "$IMAGE" "$NAME"
+        fi
+
+        STATE=`incus list --format csv -c ns | awk -F, -v n="$NAME" '$1 == n {print $2; exit}'`
+        if [ "$STATE" != "RUNNING" ]; then
+          echo "Starting $NAME..."
+          incus start "$NAME"
+        fi
+
+        echo "Opening shell in $NAME..."
+        exec incus exec "$NAME" -- bash
 
   fmt:
     desc: Format Go code
@@ -201,3 +275,13 @@ tasks:
         fi
 
         echo "Release $$VERSION created successfully!"
+
+  upload:qstorage:
+    desc: Upload dist binaries to QStorage with current->old rotation
+    cmds:
+      - |
+        set -e
+        ./scripts/upload-qstorage-build.sh \
+          --source-dir {{.DIST_PATH}} \
+          --region {{.QSTORAGE_DEFAULT_REGION}} \
+          --endpoint-url {{.QSTORAGE_DEFAULT_ENDPOINT}}

@@ -17,7 +17,6 @@ func registerConfigTypeCompletion(rootCmd *cobra.Command) {
 		// Register for get and set subcommands
 		if getCmd := findCommand(nodeConfigCmd, "get"); getCmd != nil {
 			if flag := getCmd.Flags().Lookup("config"); flag != nil {
-				flag.NoOptDefVal = "qtools"
 				getCmd.RegisterFlagCompletionFunc("config", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 					return []string{"qtools", "quil"}, cobra.ShellCompDirectiveNoFileComp
 				})
@@ -25,7 +24,6 @@ func registerConfigTypeCompletion(rootCmd *cobra.Command) {
 		}
 		if setCmd := findCommand(nodeConfigCmd, "set"); setCmd != nil {
 			if flag := setCmd.Flags().Lookup("config"); flag != nil {
-				flag.NoOptDefVal = "qtools"
 				setCmd.RegisterFlagCompletionFunc("config", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 					return []string{"qtools", "quil"}, cobra.ShellCompDirectiveNoFileComp
 				})

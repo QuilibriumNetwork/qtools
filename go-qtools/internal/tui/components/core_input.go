@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/tjsturos/qtools/go-qtools/internal/service"
+	"github.com/quilibrium/qtools/go-qtools/internal/service"
 )
 
 // CoreInput represents a core number input component
 type CoreInput struct {
 	textinput textinput.Model
-	preview  []int
-	err      error
+	preview   []int
+	err       error
 }
 
 // NewCoreInput creates a new core input component

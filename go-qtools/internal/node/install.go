@@ -12,15 +12,15 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
 )
 
 // InstallOptions represents options for complete installation
 type InstallOptions struct {
-	PeerID        string
-	ListenPort    int
-	StreamPort    int
-	BaseP2PPort   int
+	PeerID         string
+	ListenPort     int
+	StreamPort     int
+	BaseP2PPort    int
 	BaseStreamPort int
 }
 
@@ -83,10 +83,10 @@ func CompleteInstall(opts InstallOptions, cfg *config.Config) error {
 
 	// Setup node configuration
 	setupOpts := SetupOptions{
-		WorkerCount:   cfg.Manual.WorkerCount,
-		ListenPort:    opts.ListenPort,
-		StreamPort:    opts.StreamPort,
-		BaseP2PPort:   opts.BaseP2PPort,
+		WorkerCount:    cfg.Manual.WorkerCount,
+		ListenPort:     opts.ListenPort,
+		StreamPort:     opts.StreamPort,
+		BaseP2PPort:    opts.BaseP2PPort,
 		BaseStreamPort: opts.BaseStreamPort,
 	}
 	if err := SetupManualMode(cfg, cfg.Manual.WorkerCount, setupOpts); err != nil {
@@ -366,7 +366,7 @@ func downloadQClientBinary(cfg *config.Config) error {
 		fmt.Printf("QClient binary %s already exists\n", binaryName)
 	} else {
 		// Download binary
-		url := fmt.Sprintf("https://releases.quilibrium.com/qclient-release/%s", binaryName)
+		url := fmt.Sprintf("https://releases.quilibrium.com/%s", binaryName)
 		fmt.Printf("Downloading %s...\n", url)
 
 		resp, err := http.Get(url)
@@ -419,8 +419,8 @@ func fetchQClientReleaseVersion() (string, error) {
 		return "", fmt.Errorf("failed to read response: %w", err)
 	}
 
-	// Parse version from HTML
-	re := regexp.MustCompile(`qclient-([0-9]+\.[0-9]+(?:\.[0-9]+)?)-`)
+	// Parse version from release listing, allowing versions like 2.0.4.1
+	re := regexp.MustCompile(`qclient-([0-9]+(?:\.[0-9]+)+)-`)
 	matches := re.FindAllStringSubmatch(string(body), -1)
 	if len(matches) == 0 {
 		return "", fmt.Errorf("could not find version in release page")
@@ -431,7 +431,7 @@ func fetchQClientReleaseVersion() (string, error) {
 	return version, nil
 }
 
-// createSymlinks creates symlinks for node and qtools binaries
+// createSymlinks creates symlinks for node and qclient binaries
 func createSymlinks(cfg *config.Config) error {
 	fmt.Println("Creating symlinks...")
 
@@ -445,10 +445,7 @@ func createSymlinks(cfg *config.Config) error {
 	}
 
 	// Create node symlink
-	symlinkPath := "/usr/local/bin/node"
-	if cfg != nil && cfg.Service != nil && cfg.Service.LinkName != "" {
-		symlinkPath = cfg.Service.LinkName
-	}
+	symlinkPath := "/usr/local/bin/quilibrium-node"
 
 	// Remove old symlink if exists
 	if _, err := os.Lstat(symlinkPath); err == nil {
@@ -465,26 +462,19 @@ func createSymlinks(cfg *config.Config) error {
 
 	fmt.Printf("✓ Created symlink: %s -> %s\n", symlinkPath, nodeBinary)
 
-	// Create qclient symlink to qtools binary
-	// This allows "qclient" command to route to "qtools qclient"
-	qtoolsBinaryPath, err := os.Executable()
+	return createQClientSymlink(cfg, osArch)
+}
+
+// CreateQClientSymlink creates /usr/local/bin/qclient to point at the downloaded qclient binary.
+func CreateQClientSymlink(cfg *config.Config) error {
+	return createQClientSymlink(cfg, getOSArch())
+}
+
+func createQClientSymlink(cfg *config.Config, osArch string) error {
+	clientPath := config.GetClientPath()
+	qclientBinary, err := findLatestQClientBinary(clientPath, osArch)
 	if err != nil {
-		// Fallback to os.Args[0]
-		qtoolsBinaryPath = os.Args[0]
-		// Resolve if it's a relative path
-		if !filepath.IsAbs(qtoolsBinaryPath) {
-			cwd, _ := os.Getwd()
-			qtoolsBinaryPath = filepath.Join(cwd, qtoolsBinaryPath)
-		}
-	}
-	
-	// Resolve symlinks to get the actual binary path
-	if linkTarget, err := os.Readlink(qtoolsBinaryPath); err == nil {
-		if filepath.IsAbs(linkTarget) {
-			qtoolsBinaryPath = linkTarget
-		} else {
-			qtoolsBinaryPath = filepath.Join(filepath.Dir(qtoolsBinaryPath), linkTarget)
-		}
+		return fmt.Errorf("failed to find qclient binary: %w", err)
 	}
 
 	qclientSymlinkPath := "/usr/local/bin/qclient"
@@ -499,15 +489,13 @@ func createSymlinks(cfg *config.Config) error {
 		}
 	}
 
-	// Create qclient symlink pointing to qtools binary
-	qclientCmd := exec.Command("sudo", "ln", "-sf", qtoolsBinaryPath, qclientSymlinkPath)
+	// Create qclient symlink pointing to downloaded qclient binary
+	qclientCmd := exec.Command("sudo", "ln", "-sf", qclientBinary, qclientSymlinkPath)
 	if err := qclientCmd.Run(); err != nil {
 		return fmt.Errorf("failed to create qclient symlink: %w", err)
 	}
 
-	fmt.Printf("✓ Created symlink: %s -> %s\n", qclientSymlinkPath, qtoolsBinaryPath)
-	fmt.Println("  (qclient command will route to qtools qclient)")
-
+	fmt.Printf("✓ Created symlink: %s -> %s\n", qclientSymlinkPath, qclientBinary)
 	return nil
 }
 
@@ -521,7 +509,7 @@ func findLatestNodeBinary(dir, osArch string) (string, error) {
 	var latestBinary string
 	var latestVersion string
 
-	re := regexp.MustCompile(`node-([0-9]+\.[0-9]+(?:\.[0-9]+)?)-` + regexp.QuoteMeta(osArch))
+	re := regexp.MustCompile(`node-([0-9]+(?:\.[0-9]+)+)-` + regexp.QuoteMeta(osArch))
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -546,6 +534,40 @@ func findLatestNodeBinary(dir, osArch string) (string, error) {
 	return latestBinary, nil
 }
 
+// findLatestQClientBinary finds the latest qclient binary in the directory
+func findLatestQClientBinary(dir, osArch string) (string, error) {
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return "", err
+	}
+
+	var latestBinary string
+	var latestVersion string
+
+	re := regexp.MustCompile(`qclient-([0-9]+(?:\.[0-9]+)+)-` + regexp.QuoteMeta(osArch))
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		filename := file.Name()
+		matches := re.FindStringSubmatch(filename)
+		if len(matches) > 1 {
+			version := matches[1]
+			if latestVersion == "" || version > latestVersion {
+				latestVersion = version
+				latestBinary = filepath.Join(dir, filename)
+			}
+		}
+	}
+
+	if latestBinary == "" {
+		return "", fmt.Errorf("no qclient binary found for %s", osArch)
+	}
+
+	return latestBinary, nil
+}
 
 // setupFirewall sets up firewall rules for node ports
 func setupFirewall() error {
@@ -573,10 +595,10 @@ func setupFirewall() error {
 func setupUFW() error {
 	// Default ports for Quilibrium node
 	ports := []string{
-		"8336/tcp",  // P2P listen port
-		"8337/tcp",  // gRPC port
-		"8338/tcp",  // REST port
-		"8340/tcp",  // Stream port
+		"8336/tcp", // P2P listen port
+		"8337/tcp", // gRPC port
+		"8338/tcp", // REST port
+		"8340/tcp", // Stream port
 	}
 
 	for _, port := range ports {
@@ -594,10 +616,10 @@ func setupUFW() error {
 func setupFirewalld() error {
 	// Default ports for Quilibrium node
 	ports := []string{
-		"8336/tcp",  // P2P listen port
-		"8337/tcp",  // gRPC port
-		"8338/tcp",  // REST port
-		"8340/tcp",  // Stream port
+		"8336/tcp", // P2P listen port
+		"8337/tcp", // gRPC port
+		"8338/tcp", // REST port
+		"8340/tcp", // Stream port
 	}
 
 	for _, port := range ports {

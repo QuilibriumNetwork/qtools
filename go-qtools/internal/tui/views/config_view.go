@@ -7,35 +7,35 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
-	"github.com/tjsturos/qtools/go-qtools/internal/node"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/node"
 )
 
 var (
 	configTitleStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("62")).
-		Padding(0, 1)
+				Bold(true).
+				Foreground(lipgloss.Color("62")).
+				Padding(0, 1)
 
 	configKeyStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("39")).
-		Bold(true)
+			Foreground(lipgloss.Color("39")).
+			Bold(true)
 
 	configValueStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("252"))
+				Foreground(lipgloss.Color("252"))
 
 	configPathStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240")).
-		Italic(true)
+			Foreground(lipgloss.Color("240")).
+			Italic(true)
 
 	selectedStyle = lipgloss.NewStyle().
-		Background(lipgloss.Color("62")).
-		Foreground(lipgloss.Color("230")).
-		Padding(0, 1)
+			Background(lipgloss.Color("62")).
+			Foreground(lipgloss.Color("230")).
+			Padding(0, 1)
 
 	mapIndicatorStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("214")).
-		Bold(true)
+				Foreground(lipgloss.Color("214")).
+				Bold(true)
 )
 
 // ConfigType represents which config we're browsing
@@ -237,7 +237,7 @@ func (cv *ConfigView) loadEntries() error {
 		if strings.HasPrefix(path, ".") {
 			path = path[1:] // Remove leading dot
 		}
-		
+
 		keys := strings.Split(path, ".")
 		for _, key := range keys {
 			if key == "" {

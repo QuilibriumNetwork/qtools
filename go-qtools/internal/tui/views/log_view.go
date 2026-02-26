@@ -6,19 +6,19 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
-	"github.com/tjsturos/qtools/go-qtools/internal/log"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/log"
 )
 
 // LogView represents the log view
 type LogView struct {
-	config      *config.Config
-	viewer      *log.LogViewer
-	filter      *log.LogFilter
-	logType     string // "master", "worker-N", "qtools"
-	lines       []string
-	paused      bool
-	err         error
+	config  *config.Config
+	viewer  *log.LogViewer
+	filter  *log.LogFilter
+	logType string // "master", "worker-N", "qtools"
+	lines   []string
+	paused  bool
+	err     error
 }
 
 // NewLogView creates a new log view

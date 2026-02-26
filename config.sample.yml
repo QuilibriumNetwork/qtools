@@ -31,9 +31,8 @@ service:
         master_service_name: ceremonyclient
         local_only: false
         data_worker_service_name: dataworker
-        base_port: 40000
-        worker_base_p2p_port: 50000
-        worker_base_stream_port: 60000
+        worker_base_p2p_port: 25000
+        worker_base_stream_port: 32500
         master_stream_port: 8340
         default_ssh_port: 22
         default_user: ubuntu
@@ -48,7 +47,6 @@ service:
     max_threads: false
 data_worker_service:
     worker_count: 0
-    base_port: 40000
     base_index: 1
 manual:
     enabled: false  # Enable manual mode for managing workers separately from master

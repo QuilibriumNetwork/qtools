@@ -7,7 +7,6 @@ source $QTOOLS_PATH/scripts/cluster/utils.sh
 
 CSV_FILE=""
 DRY_RUN=false
-BASE_PORT=$(yq eval ".service.clustering.base_port // \"40000\"" $QTOOLS_CONFIG_FILE)
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -43,7 +42,6 @@ add_server_to_config() {
     local user=${2:-$DEFAULT_USER}
     local ssh_port=${3:-$DEFAULT_SSH_PORT}
     local data_worker_count=${4:-null}
-    local base_port=${5:-$BASE_PORT}
 
     # Check if the server already exists in the config
     if yq eval ".service.clustering.servers[] | select(.ip == \"$ip\")" "$QTOOLS_CONFIG_FILE" | grep -q .; then
@@ -59,10 +57,10 @@ add_server_to_config() {
         fi
     else
         if [ "$data_worker_count" != "null" ]; then
-            yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\", \"data_worker_count\": $data_worker_count, \"base_port\": $base_port}" "$QTOOLS_CONFIG_FILE"
+            yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\", \"data_worker_count\": $data_worker_count}" "$QTOOLS_CONFIG_FILE"
             echo -e "${GREEN}${CHECK_ICON} Added server $user@$ip:$ssh_port with $data_worker_count workers${RESET}"
         else
-            yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\", \"base_port\": $base_port}" "$QTOOLS_CONFIG_FILE"
+            yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\"}" "$QTOOLS_CONFIG_FILE"
             echo -e "${GREEN}${CHECK_ICON} Added server $user@$ip:$ssh_port${RESET}"
         fi
     fi
@@ -95,7 +93,6 @@ while IFS= read -r line || [ -n "$line" ]; do
     user=$(echo "${FIELDS[1]:-$DEFAULT_USER}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -d '"')
     ssh_port=$(echo "${FIELDS[2]:-$DEFAULT_SSH_PORT}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -d '"')
     data_worker_count=$(echo "${FIELDS[3]:-null}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -d '"')
-    base_port_val=$(echo "${FIELDS[4]:-$BASE_PORT}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -d '"')
 
     # Validate required fields
     if [ -z "$ip" ] || [ "$ip" == "null" ]; then
@@ -118,13 +115,8 @@ while IFS= read -r line || [ -n "$line" ]; do
         ssh_port=$DEFAULT_SSH_PORT
     fi
 
-    # Validate base_port
-    if ! [[ "$base_port_val" =~ ^[0-9]+$ ]]; then
-        base_port_val=$BASE_PORT
-    fi
-
     # Add server to config
-    add_server_to_config "$ip" "$user" "$ssh_port" "$data_worker_count" "$base_port_val"
+    add_server_to_config "$ip" "$user" "$ssh_port" "$data_worker_count"
 done < "$CSV_FILE"
 
 echo -e "${GREEN}${CHECK_ICON} CSV parsing completed${RESET}"

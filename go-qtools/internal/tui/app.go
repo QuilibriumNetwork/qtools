@@ -5,8 +5,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
-	"github.com/tjsturos/qtools/go-qtools/internal/tui/views"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/tui/views"
 )
 
 // ViewType represents the current view
@@ -23,20 +23,20 @@ const (
 
 // App represents the main TUI application
 type App struct {
-	config     *config.Config
+	config      *config.Config
 	currentView ViewType
-	views      map[ViewType]tea.Model
-	width      int
-	height     int
-	quitting   bool
+	views       map[ViewType]tea.Model
+	width       int
+	height      int
+	quitting    bool
 }
 
 // NewApp creates a new TUI application
 func NewApp(cfg *config.Config) *App {
 	app := &App{
-		config:     cfg,
+		config:      cfg,
 		currentView: ViewMenu,
-		views:      make(map[ViewType]tea.Model),
+		views:       make(map[ViewType]tea.Model),
 	}
 
 	// Initialize views
@@ -146,9 +146,9 @@ func renderStatusBar(cfg *config.Config, currentView ViewType) string {
 		ViewMenu:           "Menu",
 		ViewNodeSetup:      "Node Setup",
 		ViewServiceControl: "Service Control",
-		ViewStatus:          "Status",
-		ViewLogs:            "Logs",
-		ViewConfig:          "Config",
+		ViewStatus:         "Status",
+		ViewLogs:           "Logs",
+		ViewConfig:         "Config",
 	}
 
 	status := fmt.Sprintf("%s | Mode: %s | Press 'q' to quit", viewNames[currentView], mode)

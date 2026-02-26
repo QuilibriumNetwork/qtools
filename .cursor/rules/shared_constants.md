@@ -47,8 +47,8 @@ const (
     DefaultStreamPort            = 8340
     DefaultGRPCPort              = 8337
     DefaultRESTPort              = 8338
-    DefaultWorkerBaseP2PPort     = 50000
-    DefaultWorkerBaseStreamPort  = 60000
+    DefaultWorkerBaseP2PPort     = 25000
+    DefaultWorkerBaseStreamPort  = 32500
     
     // File Permissions
     DefaultDirPerm  = 0755
@@ -185,8 +185,8 @@ func GetQtoolsPath() string {
 - `8337` - Default gRPC port
 - `8338` - Default REST port
 - `8340` - Default stream port
-- `50000` - Default worker base P2P port
-- `60000` - Default worker base stream port
+- `25000` - Default worker base P2P port
+- `32500` - Default worker base stream port
 
 ### File Permissions
 - `0755` - Directory permissions

@@ -28,14 +28,13 @@ ip=$(echo "$SERVER_TO_MOVE" | yq eval '.ip' -)
 ssh_port=$(echo "$SERVER_TO_MOVE" | yq eval '.ssh_port' -)
 user=$(echo "$SERVER_TO_MOVE" | yq eval '.user' -)
 worker_count=$(echo "$SERVER_TO_MOVE" | yq eval '.data_worker_count' -)
-base_port=$(echo "$SERVER_TO_MOVE" | yq eval '.base_port' -)
 
 # Add the server back to servers array
 if [ "$worker_count" != "null" ]; then
-    yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\", \"data_worker_count\": $worker_count, \"base_port\": $base_port}" "$QTOOLS_CONFIG_FILE"
+    yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\", \"data_worker_count\": $worker_count}" "$QTOOLS_CONFIG_FILE"
     echo -e "${GREEN}${CHECK_ICON} Added server $user@$ip:$ssh_port with $worker_count workers to the cluster configuration.${RESET}"
 else
-    yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\", \"base_port\": $base_port}" "$QTOOLS_CONFIG_FILE"
+    yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\"}" "$QTOOLS_CONFIG_FILE"
     echo -e "${GREEN}${CHECK_ICON} Added server $user@$ip:$ssh_port to the cluster configuration.${RESET}"
 fi
 

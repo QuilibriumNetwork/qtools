@@ -75,8 +75,37 @@ This is the Go rewrite of qtools with TUI support, following the implementation 
 
 ```bash
 cd go-tools
-go build -o qtools ./cmd/qtools
+CGO_ENABLED=0 GOOS=linux GOARCH=$(go env GOARCH) go build -o qtools ./cmd/qtools
 ```
+
+## Upload Dev Builds To QStorage
+
+Use the helper script to upload local binaries to QStorage and rotate bucket paths:
+
+- Existing objects in `<prefix>/current/` are moved to `<prefix>/old/<timestamp>/`
+- New artifacts are uploaded to `<prefix>/current/`
+
+```bash
+cd go-qtools
+task build:docker:all
+task upload:qstorage
+```
+
+You can also run the script directly:
+
+```bash
+cd go-qtools
+./scripts/upload-qstorage-build.sh \
+  --bucket <bucket-name> \
+  --access-key-id <access-key-id> \
+  --access-key <access-key>
+```
+
+Defaults:
+- Region: `q-world-1`
+- Endpoint: `https://qstorage.quilibrium.com`
+- Prefix: `qtools/dev-builds`
+- Artifacts: `dist/qtools` and `dist/qtools-arm64`
 
 ## Running
 
@@ -89,6 +118,31 @@ go build -o qtools ./cmd/qtools
 # TUI
 ./qtools tui
 ```
+
+## Functional Testing (Incus)
+
+You can run distro-level functional testing against fresh binary builds with Incus:
+
+```bash
+cd go-qtools
+task test:functional:incus
+```
+
+What this does:
+- Builds a fresh `qtools` binary (`dist/qtools-functional`)
+- Launches Incus containers for Ubuntu LTS and Debian stable
+- Optionally runs a lightweight distro (Alpine) in best-effort mode
+- Runs `qtools node install` and validates installation outcomes:
+  - node directory created
+  - node binary installed and executable
+  - `/usr/local/bin/quilibrium-node` symlink created and on `PATH`
+  - qtools config generated
+
+Useful environment variables:
+- `SKIP_BUILD=1` to reuse an existing binary
+- `BINARY_PATH=/path/to/qtools` to test a specific binary
+- `INCLUDE_LIGHTWEIGHT=0` to skip lightweight distro checks
+- `KEEP_CONTAINERS=1` to preserve containers for debugging
 
 ## Shell Completion
 
@@ -146,6 +200,7 @@ go-tools/
 ├── internal/
 │   ├── config/         # Config management
 │   ├── node/           # Node setup and management
+│   ├── s3/             # S3/QStorage client library
 │   ├── service/        # Service management
 │   ├── log/            # Log viewing and filtering
 │   ├── tui/            # TUI implementation
@@ -161,6 +216,8 @@ go-tools/
 - **TUI Support**: Full Bubble Tea-based TUI interface
 - **Service Management**: Complete service control for master and workers
 - **Log Viewing**: Real-time log tailing with filtering support
+- **QStorage Integration**: Fetch credentials and backup to Quilibrium's S3-compatible storage
+- **Key Migration**: Go-native implementation of key data migration from config files
 
 ## Command Structure
 
@@ -172,6 +229,8 @@ Commands are organized into separate branches:
   - `node download` - Download node binary
   - `node update` - Update node binary
   - `node config` - Node configuration management
+  - `node backup` - Backup node data to QStorage (S3)
+  - `node restore` - Restore node data from QStorage (S3)
   - `node info` - Get node information
   - `node peer-id` - Get peer ID
   - `node balance` - Get balance
@@ -188,11 +247,188 @@ Commands are organized into separate branches:
   - `qtools toggle` - Toggle settings (auto-updates, etc.)
   - `qtools util` - Utility commands (public-ip, etc.)
   - `qtools logs` - Log viewing and management
-  - `qtools backup` - Backup and restore
+  - `qtools backup` - Backup and restore (local/peer)
   - `qtools diagnostics` - Diagnostic commands
   - `qtools update` - Update commands
   - `qtools completion` - Shell completion
   - `qtools tui` - Launch TUI mode
+
+## QStorage / S3 Integration
+
+Qtools integrates with Quilibrium's **QStorage** service (S3-compatible) for backing up and restoring node data.
+
+### Prerequisites
+
+Before using the backup/restore commands, you need to set up a QStorage (or S3-compatible) account with the following:
+
+1. **Create a user** with programmatic access (access key ID + access key).
+2. **Create a bucket** to store your node backups.
+3. **Attach an S3 read/write policy** to the user, scoped to the bucket. At minimum the user needs permissions for `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, and `s3:ListBucket` on the target bucket.
+
+Example S3 policy (adjust `your-bucket-name` as needed):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::your-bucket-name/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::your-bucket-name"
+    }
+  ]
+}
+```
+
+> **Tip**: Create a dedicated user per node rather than reusing credentials across nodes. This limits the blast radius if a key is compromised.
+
+### Default Connection Settings
+
+| Setting      | Default Value                        |
+|-------------|--------------------------------------|
+| Region      | `q-world-1`                          |
+| Endpoint    | `https://qstorage.quilibrium.com`    |
+
+These defaults can be overridden per-command via flags or saved in the qtools config.
+
+### Bucket Layout
+
+The S3 bucket mirrors the local `$QUIL_NODE_PATH/.config/` directory structure directly:
+
+```
+<bucket>/
+├── <prefix>/                      # Optional user-provided root prefix
+│   ├── config.yml                 # Node configuration
+│   ├── keys.yml                   # Node keys
+│   ├── store/                     # Master store data
+│   └── worker-store/              # Worker store data
+│       ├── 1/                     # Worker 1
+│       ├── 2/                     # Worker 2
+│       └── ...
+```
+
+#### S3 <-> Local Path Mapping (1:1)
+
+| S3 Path | Local Path |
+|---------|-----------|
+| `<prefix>/config.yml` | `$QUIL_NODE_PATH/.config/config.yml` |
+| `<prefix>/keys.yml` | `$QUIL_NODE_PATH/.config/keys.yml` |
+| `<prefix>/store/` | `$QUIL_NODE_PATH/.config/store/` |
+| `<prefix>/worker-store/<id>/` | `$QUIL_NODE_PATH/.config/worker-store/<id>/` |
+
+### Backing Up Node Data
+
+Use `qtools node backup` to upload node data to a QStorage bucket.
+
+```bash
+# Backup everything (interactive, prompts for credentials)
+qtools node backup
+
+# Backup config files only
+qtools node backup --config-files --bucket my-bucket
+
+# Backup master store only
+qtools node backup --master --bucket my-bucket
+
+# Backup specific workers only
+qtools node backup --worker 1,2,3 --bucket my-bucket
+
+# Backup master + specific workers
+qtools node backup --master --worker 1,2 --bucket my-bucket
+
+# Provide all credentials via flags
+qtools node backup \
+  --access-key-id <key-id> \
+  --access-key <key> \
+  --account-id <account-id> \
+  --bucket my-bucket
+```
+
+### Restoring Node Data
+
+Use `qtools node restore` to download node data from a QStorage bucket.
+
+```bash
+# Restore everything (interactive)
+qtools node restore
+
+# Restore config files only
+qtools node restore --config-files --bucket my-bucket
+
+# Restore keys only (migrate key data into existing/new config)
+qtools node restore --config-files --keys-only --bucket my-bucket
+
+# Restore master store only
+qtools node restore --master --bucket my-bucket
+
+# Restore specific workers only
+qtools node restore --worker 1,2,3 --bucket my-bucket
+
+# Restore master + specific workers
+qtools node restore --master --worker 1,2 --bucket my-bucket
+
+# Provide all credentials via flags
+qtools node restore \
+  --access-key-id <key-id> \
+  --access-key <key> \
+  --account-id <account-id> \
+  --bucket my-bucket
+
+# Override default region and endpoint
+qtools node restore --bucket my-bucket \
+  --region us-east-1 \
+  --endpoint-url https://s3.amazonaws.com
+```
+
+**`--config-files`**: Only operate on config files (`config.yml` + `keys.yml`) rather than the full node data.
+
+**`--keys-only`** (modifier for `--config-files`): Instead of replacing files directly, downloads to a temp directory, creates a fresh default node config (if needed), and migrates only the key data (`keys.yml`, `encryptionKey`, `peerPrivKey`) into the local config. Cleans up temp files afterward.
+
+**`--master`**: Only operate on the master store. Can be combined with `--worker`.
+
+**`--worker <ids>`**: Only operate on specific worker store(s). Accepts a comma-separated list of worker IDs (e.g., `1,2,3`). Can be combined with `--master`.
+
+### Shared Flags
+
+| Flag               | Description                                    |
+|-------------------|------------------------------------------------|
+| `--access-key-id` | QStorage/S3 access key ID                      |
+| `--access-key`    | QStorage/S3 access key                         |
+| `--account-id`    | QStorage/S3 account ID                         |
+| `--bucket`        | S3 bucket name                                 |
+| `--region`        | S3 region (default: `q-world-1`)               |
+| `--endpoint-url`  | S3 endpoint URL (default: QStorage endpoint)   |
+| `--prefix`        | Optional root prefix within the bucket         |
+| `--config-files`  | Only operate on config files                   |
+| `--keys-only`     | Migrate key data only (restore, with `--config-files`) |
+| `--master`        | Only operate on the master store               |
+| `--worker`        | Only operate on specific worker stores (comma-separated IDs) |
+
+### Saving Credentials
+
+After backup/restore, you'll be prompted to save credentials for future use. Credentials are stored in **plain text** in the qtools config file under the `qstorage` section:
+
+```yaml
+qstorage:
+  access_key_id: "your-key-id"
+  access_key: "your-access-key"
+  account_id: "your-account-id"
+  bucket: "your-bucket"
+  region: "q-world-1"
+  endpoint_url: "https://qstorage.quilibrium.com"
+  prefix: ""
+```
 
 ## Status
 

@@ -30,7 +30,7 @@ func GenerateDefaultConfig() *Config {
 			Testnet: false,
 			WorkingDir: "/home/quilibrium/node",
 			LinkDirectory: "/usr/local/bin",
-			LinkName: "node",
+			LinkName: "quilibrium-node",
 			DefaultUser: "quilibrium",
 			QuilibriumNodePath: "/home/quilibrium/node",
 			QuilibriumClientPath: "/home/quilibrium/client",
@@ -45,9 +45,8 @@ func GenerateDefaultConfig() *Config {
 				MasterServiceName: "ceremonyclient",
 				LocalOnly: false,
 				DataWorkerServiceName: "dataworker",
-				BasePort: 40000,
-				WorkerBaseP2PPort: 50000,
-				WorkerBaseStreamPort: 60000,
+				WorkerBaseP2PPort: 25000,
+				WorkerBaseStreamPort: 32500,
 				MasterStreamPort: 8340,
 				DefaultSSHPort: 22,
 				DefaultUser: "ubuntu",
@@ -63,7 +62,6 @@ func GenerateDefaultConfig() *Config {
 		},
 		DataWorkerService: &DataWorkerServiceConfig{
 			WorkerCount: 0,
-			BasePort: 40000,
 			BaseIndex: 1,
 		},
 		Manual: &ManualConfig{
@@ -85,11 +83,20 @@ func GenerateDefaultConfig() *Config {
 		NodeRegistry: &NodeRegistry{
 			Nodes: []RegisteredNode{},
 		},
+		QStorage: &QStorageConfig{
+			AccessKeyID: "",
+			AccessKey:   "",
+			AccountID:   "",
+			Bucket:      "",
+			Region:      "q-world-1",
+			EndpointURL: "https://qstorage.quilibrium.com",
+			Prefix:      "",
+		},
 	}
 
 	// Set config version
 	config.Raw = make(map[string]interface{})
-	config.Raw["config_version"] = "1.3"
+	config.Raw["config_version"] = "1.4"
 
 	return config
 }
@@ -139,6 +146,17 @@ func MergeDefaults(config *Config) *Config {
 	}
 	if config.NodeRegistry == nil {
 		config.NodeRegistry = defaults.NodeRegistry
+	}
+	if config.QStorage == nil {
+		config.QStorage = defaults.QStorage
+	} else {
+		// Ensure defaults for region and endpoint if not explicitly set
+		if config.QStorage.Region == "" {
+			config.QStorage.Region = defaults.QStorage.Region
+		}
+		if config.QStorage.EndpointURL == "" {
+			config.QStorage.EndpointURL = defaults.QStorage.EndpointURL
+		}
 	}
 
 	return config

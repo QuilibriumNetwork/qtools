@@ -5,10 +5,9 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
 )
 
 // DownloadNode downloads the node binary (optionally with version and link)
@@ -78,25 +77,11 @@ func DownloadNode(cfg *config.Config, version string, createLink bool) error {
 
 	// Create symlink if requested
 	if createLink {
-		symlinkPath := "/usr/local/bin/node"
-		if cfg != nil && cfg.Service != nil && cfg.Service.LinkName != "" {
-			symlinkPath = cfg.Service.LinkName
+		if err := updateNodeSymlink(binaryPath); err != nil {
+			return err
 		}
 
-		// Remove old symlink if exists
-		if _, err := os.Lstat(symlinkPath); err == nil {
-			if err := os.Remove(symlinkPath); err != nil {
-				return fmt.Errorf("failed to remove old symlink: %w", err)
-			}
-		}
-
-		// Create new symlink (requires sudo)
-		cmd := exec.Command("sudo", "ln", "-sf", binaryPath, symlinkPath)
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to create symlink: %w", err)
-		}
-
-		fmt.Printf("✓ Created symlink: %s -> %s\n", symlinkPath, binaryPath)
+		fmt.Printf("✓ Created symlink: %s -> %s\n", "/usr/local/bin/quilibrium-node", binaryPath)
 
 		// Update version in config
 		if cfg != nil {
@@ -138,7 +123,7 @@ func DownloadQClient(cfg *config.Config, version string) error {
 		fmt.Printf("QClient binary %s already exists\n", binaryName)
 	} else {
 		// Download binary
-		url := fmt.Sprintf("https://releases.quilibrium.com/qclient-release/%s", binaryName)
+		url := fmt.Sprintf("https://releases.quilibrium.com/%s", binaryName)
 		fmt.Printf("Downloading %s...\n", url)
 
 		resp, err := http.Get(url)

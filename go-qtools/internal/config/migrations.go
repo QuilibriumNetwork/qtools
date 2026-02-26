@@ -159,11 +159,28 @@ func BackupConfig(configPath string) (string, error) {
 	return backupPath, nil
 }
 
+// MigrateAddQStorage adds the qstorage configuration section
+func MigrateAddQStorage(old map[string]interface{}) (map[string]interface{}, error) {
+	if _, exists := old["qstorage"]; !exists {
+		old["qstorage"] = map[string]interface{}{
+			"access_key_id": "",
+			"access_key":    "",
+			"account_id":    "",
+			"bucket":        "",
+			"region":        "q-world-1",
+			"endpoint_url":  "https://qstorage.quilibrium.com",
+			"prefix":        "",
+		}
+	}
+	return old, nil
+}
+
 // InitializeMigrations registers all migration functions
 func InitializeMigrations() {
 	// Register migrations in order
 	RegisterMigration("1.0", "1.1", MigrateCrontabToScheduledTasks)
 	RegisterMigration("1.1", "1.2", MigrateServiceSettings)
 	RegisterMigration("1.2", "1.3", MigrateListenAddr)
+	RegisterMigration("1.3", "1.4", MigrateAddQStorage)
 	// Add more migrations as config structure evolves
 }

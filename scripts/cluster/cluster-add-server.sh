@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Default values
-BASE_PORT=$(yq eval ".service.clustering.base_port // \"$BASE_PORT\"" $QTOOLS_CONFIG_FILE)
 DRY_RUN=false
 CSV_FILE=""
 PROVISION=false
@@ -11,10 +10,6 @@ SERVERS=()
 while [[ $# -gt 0 ]]; do
     echo "Processing argument: $1"
     case $1 in
-        --base-port)
-            BASE_PORT="$2"
-            shift 2
-            ;;
         --dry-run)
             DRY_RUN=true
             shift
@@ -46,14 +41,6 @@ if [ -n "$CSV_FILE" ]; then
     fi
 fi
 
-if [ -z "$BASE_PORT" ]; then
-    echo -e "${RED}${ERROR_ICON} Error: Base port not specified in config or via --base-port parameter${RESET}"
-    exit 1
-else
-    echo -e "${GREEN}${CHECK_ICON} Base port set to $BASE_PORT${RESET}"
-fi
-
-
 # Function to add a server to the cluster configuration
 add_server_to_config() {
     local ip=$1
@@ -61,7 +48,6 @@ add_server_to_config() {
     local user=${3:-$DEFAULT_USER}   # Default user is the current user if not specified
     local worker_count=${4:-null}
     local core_count=${5:-null}
-    local base_port=${6:-$BASE_PORT}
     # Check if the server already exists in the config
     if yq eval ".service.clustering.servers[] | select(.ip == \"$ip\")" "$QTOOLS_CONFIG_FILE" | grep -q .; then
         echo -e "${YELLOW}${WARNING_ICON} Server $ip already exists in the configuration. Removing existing entry.${RESET}"
@@ -78,10 +64,10 @@ add_server_to_config() {
 
     # Add the new server to the configuration
     if [ "$worker_count" != "null" ]; then
-        yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\", \"data_worker_count\": $worker_count, \"base_port\": $base_port, \"base_index\": $base_index}" "$QTOOLS_CONFIG_FILE"
+        yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\", \"data_worker_count\": $worker_count, \"base_index\": $base_index}" "$QTOOLS_CONFIG_FILE"
         echo -e "${GREEN}${CHECK_ICON} Added server $user@$ip:$ssh_port with $worker_count workers (base_index: $base_index) to the cluster configuration.${RESET}"
     else
-        yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\", \"base_port\": $base_port, \"base_index\": $base_index}" "$QTOOLS_CONFIG_FILE"
+        yq eval -i ".service.clustering.servers += {\"ip\": \"$ip\", \"ssh_port\": $ssh_port, \"user\": \"$user\", \"base_index\": $base_index}" "$QTOOLS_CONFIG_FILE"
         echo -e "${GREEN}${CHECK_ICON} Added server $user@$ip:$ssh_port (base_index: $base_index) to the cluster configuration.${RESET}"
     fi
 
@@ -114,10 +100,10 @@ for arg in "${SERVERS[@]}"; do
         core_count="${BASH_REMATCH[8]}"
         if [ -n "$worker_count" ]; then
             echo -e "${BLUE}${INFO_ICON} Processing server: $user@$ip (port: $ssh_port, workers: $worker_count)${RESET}"
-            add_server_to_config "$ip" "$ssh_port" "$user" "$worker_count" "$core_count" "$BASE_PORT"
+            add_server_to_config "$ip" "$ssh_port" "$user" "$worker_count" "$core_count"
         else
             echo -e "${BLUE}${INFO_ICON} Processing server: $user@$ip (port: $ssh_port)${RESET}"
-            add_server_to_config "$ip" "$ssh_port" "$user" null null "$BASE_PORT"
+            add_server_to_config "$ip" "$ssh_port" "$user"
         fi
     else
         echo -e "${RED}${ERROR_ICON} Invalid format for argument: $arg${RESET}"

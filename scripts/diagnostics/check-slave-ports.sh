@@ -7,7 +7,6 @@ echo -e "${BLUE}${INFO_ICON} Checking data worker ports on all servers...${RESET
 # Get server configuration
 servers=$(yq eval '.service.clustering.servers' $QTOOLS_CONFIG_FILE)
 server_count=$(echo "$servers" | yq eval '. | length' -)
-base_port=$(yq eval '.service.clustering.base_port // "40000"' $QTOOLS_CONFIG_FILE)
 
 # Check each server
 for ((i=0; i<server_count; i++)); do
@@ -23,7 +22,7 @@ for ((i=0; i<server_count; i++)); do
     fi
 
     if [ "$data_worker_count" -gt 0 ]; then
-        check_data_worker_services "$ip" "$user" "$ssh_port" "$data_worker_count" "$base_port"
+        check_data_worker_services "$ip" "$user" "$ssh_port" "$data_worker_count" "$WORKER_BASE_P2P_PORT"
     else
         echo -e "${BLUE}${INFO_ICON} Server $ip has no configured data workers${RESET}"
     fi

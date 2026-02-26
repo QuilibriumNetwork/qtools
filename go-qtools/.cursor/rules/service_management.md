@@ -1,12 +1,16 @@
 # Service Management Guidelines
 
+## Repository Import Namespace
+
+Expected import references use `github.com/quilibrium/qtools/go-qtools/...` throughout this guide.
+
 ## Platform Detection
 
 Always detect platform before service operations:
 
 ```go
 import (
-    "github.com/tjsturos/qtools/go-qtools/internal/service"
+    "github.com/quilibrium/qtools/go-qtools/internal/service"
     "runtime"
 )
 
@@ -22,8 +26,8 @@ Use `constants.GetServiceName(cfg)` instead of hardcoding:
 
 ```go
 import (
-    "github.com/tjsturos/qtools/go-qtools/internal/constants"
-    "github.com/tjsturos/qtools/go-qtools/internal/config"
+    "github.com/quilibrium/qtools/go-qtools/internal/constants"
+    "github.com/quilibrium/qtools/go-qtools/internal/config"
 )
 
 serviceName := constants.GetServiceName(cfg)
@@ -35,7 +39,7 @@ err := backend.StartService(serviceName)
 Always use `ServiceOptions` struct for service configuration:
 
 ```go
-import "github.com/tjsturos/qtools/go-qtools/internal/service"
+import "github.com/quilibrium/qtools/go-qtools/internal/service"
 
 opts := &service.ServiceOptions{
     Testnet:            false,
@@ -94,7 +98,7 @@ Support flexible core number input:
 - Combination: `"1-3,5,7-9"` → `[1,2,3,5,7,8,9]`
 
 ```go
-import "github.com/tjsturos/qtools/go-qtools/internal/service"
+import "github.com/quilibrium/qtools/go-qtools/internal/service"
 
 cores, err := service.ParseCoreNumbers("1-3,5,7-9")
 if err != nil {

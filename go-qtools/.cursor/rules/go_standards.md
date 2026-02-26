@@ -1,5 +1,9 @@
 # Go Coding Standards for go-qtools
 
+## Repository Import Namespace
+
+Use the repository module prefix `github.com/quilibrium/qtools/go-qtools` for all internal imports and examples in docs/rules. Do not reference the old `github.com/tjsturos/...` namespace.
+
 ## General Principles
 
 1. **Use constants from `internal/constants`** - Never hardcode usernames, groups, paths, ports, or service names. Import and use `internal/constants` package.
@@ -19,7 +23,7 @@ serviceName := "ceremonyclient"
 
 **✅ GOOD:**
 ```go
-import "github.com/tjsturos/qtools/go-qtools/internal/constants"
+import "github.com/quilibrium/qtools/go-qtools/internal/constants"
 
 user := constants.DefaultUser
 path := constants.DefaultQtoolsPath
@@ -73,7 +77,7 @@ func (e *ConfigError) Unwrap() error {
 
 Always use platform detection before service operations:
 ```go
-import "github.com/tjsturos/qtools/go-qtools/internal/service"
+import "github.com/quilibrium/qtools/go-qtools/internal/service"
 
 backend := service.GetServiceBackend()
 if backend == nil {
@@ -95,7 +99,7 @@ err := backend.StartService(serviceName)
 
 Always use `NodeConfigManager` for node config operations:
 ```go
-import "github.com/tjsturos/qtools/go-qtools/internal/node"
+import "github.com/quilibrium/qtools/go-qtools/internal/node"
 
 manager, err := node.NewNodeConfigManager(configPath)
 if err != nil {
@@ -137,7 +141,7 @@ type ServiceBackend interface {
 
 All qtools/node files should be owned by `quilibrium:qtools`:
 ```go
-import "github.com/tjsturos/qtools/go-qtools/internal/constants"
+import "github.com/quilibrium/qtools/go-qtools/internal/constants"
 
 user := constants.DefaultUser
 group := constants.DefaultGroup

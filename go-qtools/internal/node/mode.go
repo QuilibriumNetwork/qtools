@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
 )
 
 // Mode represents the node operation mode

@@ -136,18 +136,18 @@ fi
 # Get base ports for workers
 BASE_P2P_PORT=$(safe_yq_eval '.engine.dataWorkerBaseP2PPort // ""')
 if [ -z "$BASE_P2P_PORT" ] || [ "$BASE_P2P_PORT" = "0" ] || [ "$BASE_P2P_PORT" = "null" ]; then
-    BASE_P2P_PORT=$(yq eval '.service.clustering.worker_base_p2p_port // "50000"' "$QTOOLS_CONFIG_FILE")
+    BASE_P2P_PORT=$(yq eval '.service.clustering.worker_base_p2p_port // "25000"' "$QTOOLS_CONFIG_FILE")
 fi
 if [ -z "$BASE_P2P_PORT" ] || [ "$BASE_P2P_PORT" = "0" ]; then
-    BASE_P2P_PORT=50000
+    BASE_P2P_PORT=25000
 fi
 
 BASE_STREAM_PORT=$(safe_yq_eval '.engine.dataWorkerBaseStreamPort // ""')
 if [ -z "$BASE_STREAM_PORT" ] || [ "$BASE_STREAM_PORT" = "0" ] || [ "$BASE_STREAM_PORT" = "null" ]; then
-    BASE_STREAM_PORT=$(yq eval '.service.clustering.worker_base_stream_port // "60000"' "$QTOOLS_CONFIG_FILE")
+    BASE_STREAM_PORT=$(yq eval '.service.clustering.worker_base_stream_port // "32500"' "$QTOOLS_CONFIG_FILE")
 fi
 if [ -z "$BASE_STREAM_PORT" ] || [ "$BASE_STREAM_PORT" = "0" ]; then
-    BASE_STREAM_PORT=60000
+    BASE_STREAM_PORT=32500
 fi
 
 # Construct master announce multiaddrs

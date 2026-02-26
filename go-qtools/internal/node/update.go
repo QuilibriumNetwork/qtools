@@ -11,14 +11,14 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
 )
 
 // UpdateOptions represents options for node update
 type UpdateOptions struct {
-	Force    bool
+	Force     bool
 	SkipClean bool
-	Auto     bool
+	Auto      bool
 }
 
 // UpdateNode updates the node binary to the latest version
@@ -84,15 +84,12 @@ func GetCurrentNodeVersion(cfg *config.Config) (string, error) {
 	}
 
 	// Try to get from symlink
-	symlinkPath := "/usr/local/bin/node"
-	if cfg != nil && cfg.Service != nil && cfg.Service.LinkName != "" {
-		symlinkPath = cfg.Service.LinkName
-	}
+	symlinkPath := "/usr/local/bin/quilibrium-node"
 
 	linkTarget, err := os.Readlink(symlinkPath)
 	if err == nil {
 		// Extract version from filename
-		re := regexp.MustCompile(`node-([0-9]+\.[0-9]+(?:\.[0-9]+)?)`)
+		re := regexp.MustCompile(`node-([0-9]+(?:\.[0-9]+)+)`)
 		matches := re.FindStringSubmatch(linkTarget)
 		if len(matches) > 1 {
 			version := matches[1]
@@ -130,8 +127,8 @@ func FetchNodeReleaseVersion() (string, error) {
 		return "", fmt.Errorf("failed to read response: %w", err)
 	}
 
-	// Parse version from HTML (similar to bash script)
-	re := regexp.MustCompile(`-([0-9]+\.[0-9]+(?:\.[0-9]+)?)-`)
+	// Parse version from release listing, allowing versions like 2.1.0.18
+	re := regexp.MustCompile(`-([0-9]+(?:\.[0-9]+)+)-`)
 	matches := re.FindAllStringSubmatch(string(body), -1)
 	if len(matches) == 0 {
 		return "", fmt.Errorf("could not find version in release page")
@@ -197,23 +194,9 @@ func downloadAndInstallNode(version string, cfg *config.Config) error {
 		fmt.Printf("Warning: failed to set ownership: %v\n", err)
 	}
 
-	// Create symlink
-	symlinkPath := "/usr/local/bin/node"
-	if cfg != nil && cfg.Service != nil && cfg.Service.LinkName != "" {
-		symlinkPath = cfg.Service.LinkName
-	}
-
-	// Remove old symlink if exists
-	if _, err := os.Lstat(symlinkPath); err == nil {
-		if err := os.Remove(symlinkPath); err != nil {
-			return fmt.Errorf("failed to remove old symlink: %w", err)
-		}
-	}
-
-	// Create new symlink (requires sudo)
-	cmd := exec.Command("sudo", "ln", "-sf", binaryPath, symlinkPath)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to create symlink: %w", err)
+	// Always repoint the canonical symlink to the downloaded binary.
+	if err := updateNodeSymlink(binaryPath); err != nil {
+		return err
 	}
 
 	return nil
@@ -300,7 +283,6 @@ func getOSArch() string {
 
 	return fmt.Sprintf("%s-%s", os, mappedArch)
 }
-
 
 // setFileOwnership sets file ownership to quilibrium:qtools
 func setFileOwnership(path string) error {

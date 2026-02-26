@@ -3,31 +3,31 @@ package service
 import (
 	"fmt"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
-	"github.com/tjsturos/qtools/go-qtools/internal/node"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/node"
 )
 
 // StartOptions represents options for starting services
 type StartOptions struct {
 	MasterOnly bool
-	CoreIndex   int
-	Cores       string // e.g., "1-4,6,8"
+	CoreIndex  int
+	Cores      string // e.g., "1-4,6,8"
 }
 
 // StopOptions represents options for stopping services
 type StopOptions struct {
 	MasterOnly bool
-	CoreIndex   int
-	Cores       string
-	Kill        bool
+	CoreIndex  int
+	Cores      string
+	Kill       bool
 }
 
 // RestartOptions represents options for restarting services
 type RestartOptions struct {
 	MasterOnly bool
-	CoreIndex   int
-	Cores       string
-	Wait        bool
+	CoreIndex  int
+	Cores      string
+	Wait       bool
 }
 
 // StatusOptions represents options for getting service status
@@ -170,7 +170,7 @@ func GetStatus(opts StatusOptions, cfg *config.Config) (*Status, error) {
 
 	serviceName := getServiceName(cfg)
 	status := &Status{
-		Master: &ServiceStatus{},
+		Master:  &ServiceStatus{},
 		Workers: make(map[int]*ServiceStatus),
 	}
 

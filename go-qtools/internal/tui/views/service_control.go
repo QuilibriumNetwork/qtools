@@ -6,19 +6,19 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
-	"github.com/tjsturos/qtools/go-qtools/internal/service"
-	"github.com/tjsturos/qtools/go-qtools/internal/tui/components"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/service"
+	"github.com/quilibrium/qtools/go-qtools/internal/tui/components"
 )
 
 // ServiceControlView represents the service control view
 type ServiceControlView struct {
-	config          *config.Config
-	showAdvanced    bool
-	coreInput       *components.CoreInput
-	selectedAction  string // "start", "stop", "restart"
-	status          *service.Status
-	err             error
+	config         *config.Config
+	showAdvanced   bool
+	coreInput      *components.CoreInput
+	selectedAction string // "start", "stop", "restart"
+	status         *service.Status
+	err            error
 }
 
 // NewServiceControlView creates a new service control view

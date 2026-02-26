@@ -5,16 +5,13 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
 )
 
 // ExecuteNodeCommand executes the node binary with the given arguments
 func ExecuteNodeCommand(args []string, cfg *config.Config) ([]byte, error) {
 	// Get node binary path
-	nodePath := "/usr/local/bin/node"
-	if cfg != nil && cfg.Service != nil && cfg.Service.LinkName != "" {
-		nodePath = cfg.Service.LinkName
-	}
+	nodePath := "/usr/local/bin/quilibrium-node"
 
 	// Build command with flags from config
 	cmdArgs := []string{}

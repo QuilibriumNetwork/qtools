@@ -151,8 +151,8 @@ update_local_quil_config() {
     # Set base P2P and stream ports for workers if not present, and populate 2.1 arrays for local server
     local base_p2p=$(yq eval '.engine.dataWorkerBaseP2PPort // "0"' $QUIL_CONFIG_FILE)
     local base_stream=$(yq eval '.engine.dataWorkerBaseStreamPort // "0"' $QUIL_CONFIG_FILE)
-    if [ -z "$base_p2p" ] || [ "$base_p2p" = "0" ]; then base_p2p=50000; fi
-    if [ -z "$base_stream" ] || [ "$base_stream" = "0" ]; then base_stream=60000; fi
+    if [ -z "$base_p2p" ] || [ "$base_p2p" = "0" ]; then base_p2p=25000; fi
+    if [ -z "$base_stream" ] || [ "$base_stream" = "0" ]; then base_stream=32500; fi
 
     if [ "$DRY_RUN" == "false" ]; then
         yq eval -i ".engine.dataWorkerBaseP2PPort = $base_p2p" $QUIL_CONFIG_FILE
@@ -214,7 +214,7 @@ setup_remote_firewall() {
     local SSH_PORT=$3
     local CORES_TO_USE=$4
 
-    local END_PORT=$((BASE_PORT + CORES_TO_USE - 1))
+    local END_PORT=$((WORKER_BASE_P2P_PORT + CORES_TO_USE - 1))
     local MASTER_IP=$(yq eval '.service.clustering.main_ip' $QTOOLS_CONFIG_FILE)
     if [ -z "$MASTER_IP" ] && [ "$DRY_RUN" == "false" ]; then
         echo -e "${RED}${WARNING_ICON} Warning: .service.clustering.main_ip is not set in $QTOOLS_CONFIG_FILE${RESET}"
@@ -222,7 +222,7 @@ setup_remote_firewall() {
         return 1
     fi
 
-    echo -e "${BLUE}${INFO_ICON} Setting up remote firewall on $IP ($REMOTE_USER) for ports $BASE_PORT to $END_PORT${RESET}"
+    echo -e "${BLUE}${INFO_ICON} Setting up remote firewall on $IP ($REMOTE_USER) for ports $WORKER_BASE_P2P_PORT to $END_PORT${RESET}"
 
     if [ "$DRY_RUN" == "false" ]; then
         # Check if UFW is enabled
@@ -231,9 +231,7 @@ setup_remote_firewall() {
             echo -e "${YELLOW}${WARNING_ICON} Warning: UFW is not enabled on $IP. Skipping firewall setup.${RESET}"
             echo -e "${BLUE}${INFO_ICON} If you enable UFW on the remote server, run this script again.${RESET}"
         else
-            # Remove any existing rules for these ports
-            # ssh_to_remote $IP $REMOTE_USER $SSH_PORT "sudo ufw status numbered | grep '$BASE_PORT' | cut -d']' -f1 | tac | xargs -I {} sudo ufw --force delete {}"
-            ssh_to_remote $IP $REMOTE_USER $SSH_PORT "sudo ufw allow proto tcp from $MASTER_IP to any port $BASE_PORT:$END_PORT" &> /dev/null
+            ssh_to_remote $IP $REMOTE_USER $SSH_PORT "sudo ufw allow proto tcp from $MASTER_IP to any port $WORKER_BASE_P2P_PORT:$END_PORT" &> /dev/null
 
             # Reload ufw to apply changes
             ssh_to_remote $IP $REMOTE_USER $SSH_PORT "sudo ufw reload" &> /dev/null
@@ -242,7 +240,7 @@ setup_remote_firewall() {
         fi
 
     else
-        echo -e "${BLUE}${INFO_ICON} [DRY RUN] [ MASTER ] [ $LOCAL_IP ] Would set up remote firewall on $IP ($USER) for ports $BASE_PORT-$END_PORT${RESET}"
+        echo -e "${BLUE}${INFO_ICON} [DRY RUN] [ MASTER ] [ $LOCAL_IP ] Would set up remote firewall on $IP ($USER) for ports $WORKER_BASE_P2P_PORT-$END_PORT${RESET}"
     fi
 }
 

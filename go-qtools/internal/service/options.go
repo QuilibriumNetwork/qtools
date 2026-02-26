@@ -5,24 +5,24 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
 )
 
 // ServiceOptions represents service configuration options
 type ServiceOptions struct {
-	Testnet              bool
-	Debug                bool
-	SkipSignatureCheck   bool
-	IPFSDebug            bool
-	RestartTime          string // e.g., "60s" or "5s"
-	WorkerRestartTime    string // e.g., "5s"
-	GOGC                 string // e.g., "100"
-	GOMEMLimit           string // e.g., "8GiB"
-	EnableCPUScheduling  bool
-	DataWorkerPriority   int // Default 90
-	EnableService        bool
-	RestartService       bool
-	MasterOnly           bool
+	Testnet             bool
+	Debug               bool
+	SkipSignatureCheck  bool
+	IPFSDebug           bool
+	RestartTime         string // e.g., "60s" or "5s"
+	WorkerRestartTime   string // e.g., "5s"
+	GOGC                string // e.g., "100"
+	GOMEMLimit          string // e.g., "8GiB"
+	EnableCPUScheduling bool
+	DataWorkerPriority  int // Default 90
+	EnableService       bool
+	RestartService      bool
+	MasterOnly          bool
 }
 
 // ParseServiceOptions parses command-line arguments into ServiceOptions

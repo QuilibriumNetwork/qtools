@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/tjsturos/qtools/go-qtools/internal/config"
+	"github.com/quilibrium/qtools/go-qtools/internal/config"
 )
 
 // ConfigCommandType represents the type of config command

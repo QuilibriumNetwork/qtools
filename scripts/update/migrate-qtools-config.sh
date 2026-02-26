@@ -165,8 +165,8 @@ VERSION_24() {
     echo "Current version: $current_version vs $VERSION"
     if [ "$current_version" -lt "$VERSION" ]; then
         echo "Migrating config.yml to version 24"
-        yq eval -i '.service.clustering.worker_base_p2p_port = (.service.clustering.worker_base_p2p_port // 50000)' "$QTOOLS_CONFIG_FILE"
-        yq eval -i '.service.clustering.worker_base_stream_port = (.service.clustering.worker_base_stream_port // 60000)' "$QTOOLS_CONFIG_FILE"
+        yq eval -i '.service.clustering.worker_base_p2p_port = (.service.clustering.worker_base_p2p_port // 25000)' "$QTOOLS_CONFIG_FILE"
+        yq eval -i '.service.clustering.worker_base_stream_port = (.service.clustering.worker_base_stream_port // 32500)' "$QTOOLS_CONFIG_FILE"
         yq eval -i '.service.clustering.master_stream_port = (.service.clustering.master_stream_port // 8340)' "$QTOOLS_CONFIG_FILE"
         yq eval -i '.qtools_version = 24' "$QTOOLS_CONFIG_FILE"
         echo "Updated qtools_version to 24"

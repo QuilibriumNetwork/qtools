@@ -9,9 +9,9 @@
 #                               This is the port for .p2p.listenMultiaddr
 #   --stream-port <port>        Set the stream listen port (default: 8340).
 #                               This is the port for .p2p.streamListenMultiaddr
-#   --base-p2p-port <port>      Set the base P2P port for workers (default: 50000).
+#   --base-p2p-port <port>      Set the base P2P port for workers (default: 25000).
 #                               Worker P2P ports will start from this value.
-#   --base-stream-port <port>   Set the base stream port for workers (default: 60000).
+#   --base-stream-port <port>   Set the base stream port for workers (default: 32500).
 #                               Worker stream ports will start from this value.
 #
 # This script performs a complete installation of the Quilibrium node.
